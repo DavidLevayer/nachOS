@@ -1,0 +1,313 @@
+# Copyright (c) 2011 Vincent Danjean <Vincent.Danjean@imag.fr>
+#
+# This is part of a GNU Makefile, mainly used by the Makefile
+# in the build/ subdirectory.
+
+###########################################################################
+
+# First, find sources and Nachos root dir
+topsrc_dir ?= $(patsubst %/,%,$(dir $(firstword $(wildcard Makefile.sysdep ../Makefile.sysdep ../../Makefile.sysdep))))
+NACHOS_SYS := $(shell $(topsrc_dir)/bin/nachos_sys)
+NACHOS_ARCH := $(shell $(topsrc_dir)/bin/nachos_arch)
+
+# Include system specific information (such as native/cross compiler)
+include $(topsrc_dir)/Makefile.sysdep
+
+# RN: Hummm... There's a lot to tell about the story of the two
+# following lines. Essentially, it allows 'make' to implicitely search
+# for source/header files in various directories.
+
+joinlist=$(subst $(EMPTY) $(EMPTY),$1,$2)
+buildvpath=$(call joinlist,:,$(addprefix $(topsrc_dir)/,$1))
+vpath %.cc $(call buildvpath,machine threads userprog filesys network vm)
+vpath %.S $(call buildvpath,machine threads userprog filesys network vm)
+vpath %.c $(topsrc_dir)/test
+vpath %.S $(topsrc_dir)/test
+
+all:
+.PHONY: all
+
+# Set the compiler to use depending on the value of the TARGET variable
+# TARGET can be HOST (native compiler) or MIPS (cross compiler)
+TARGET?=HOST
+EMPTY=
+TG=$(TARGET)_
+TG_SPC=$(TARGET) $(EMPTY)
+CC =$($(TG)CC)
+CXX=$($(TG)CXX)
+TARGET_ARCH?=$($(TG)TARGET_ARCH)
+TARGET_MACH?=$($(TG)TARGET_MACH)
+ASFLAGS+=$($(TG)ASFLAGS)
+CFLAGS+=$($(TG)CFLAGS)
+CXXFLAGS+=$($(TG)CXXFLAGS)
+CPPFLAGS+=$($(TG)CPPFLAGS)
+LDFLAGS+=$($(TG)LDFLAGS)
+LDLIBS+=$($(TG)LDLIBS)
+
+###########################################################################
+
+# Set default make verbosity
+# By default, show only summary
+DEFAULT_VERBOSITY?=0
+# Default setting can be overruled with 'V=x' on make invocation
+# Ie: make V=2
+# Possible values are :
+#   0: show summary
+#   1: show only main commands
+#   2: show all commands
+
+# define some messages depending on the verbosity
+dep_V = $(dep_V_$(V))
+dep_V_ = $(dep_V_$(DEFAULT_VERBOSITY))
+dep_V_0 = @
+dep_V_1 = @
+
+cc_V = $(cc_V_$(V))
+cc_V_ = $(cc_V_$(DEFAULT_VERBOSITY))
+cc_V_0 = @echo "  [$(TG_SPC)CC] $@      ($<)";
+
+cxx_V = $(cxx_V_$(V))
+cxx_V_ = $(cxx_V_$(DEFAULT_VERBOSITY))
+cxx_V_0 = @echo "  [$(TG_SPC)CXX]       $@      ($<)";
+
+s_V = $(s_V_$(V))
+s_V_ = $(s_V_$(DEFAULT_VERBOSITY))
+s_V_0 = @echo "  [$(TG_SPC)AS]  $@      ($<)";
+
+lko_V = $(lko_V_$(V))
+lko_V_ = $(lko_V_$(DEFAULT_VERBOSITY))
+lko_V_0 = @echo "  [$(TG_SPC)LINK CC]   $@      ($^)";
+
+lkcc_V = $(lkcc_V_$(V))
+lkcc_V_ = $(lkcc_V_$(DEFAULT_VERBOSITY))
+lkcc_V_0 = @echo "  [$(TG_SPC)LINK CXX] $@      ($^)";
+
+c2n_V = $(c2n_V_$(V))
+c2n_V_ = $(c2n_V_$(DEFAULT_VERBOSITY))
+c2n_V_0 = @echo "  [NACHOS RELINK]      $@      ($<)"; >/dev/null 
+
+###########################################################################
+define nachos-kernel-rules # 1:flavor 2:prefix 3:target 4:CPPFLAGS
+#$$(warning defining NachOS kernel $3 with flavor $1)
+
+all: $3
+
+$3: TARGET=HOST
+$3: CPPFLAGS+=$4
+$3: $$(strip $$(addprefix $2,$$(call flavor-get-OFILES,$1)))
+	$$(lkcc_V)$$(LINK.cc) $$^ $$(LOADLIBES) $$(LDLIBS) -o $$@
+
+ifeq ($$(strip $$(call flavor-get-SOURCES,$1)),)
+$$(error No sources in flavor $1)
+endif
+
+$$(strip $$(addprefix $2,$$(call flavor-get-OFILES,$1))): $$(filter-out .%.d,$$(MAKEFILE_LIST))
+$$(patsubst %.o,.%.d,$$(strip $$(addprefix $2,$$(call flavor-get-OFILES,$1)))): $$(filter-out .%.d,$$(MAKEFILE_LIST))
+
+ifneq ($$(MAKECMDGOALS),clean)
+-include $$(patsubst %.o,.%.d,$$(strip $$(addprefix $2,$$(call flavor-get-OFILES,$1))))
+endif
+
+clean::
+	$$(RM) $3 $$(strip $$(addprefix $2,$$(call flavor-get-OFILES,$1)))
+	$$(RM) $$(patsubst %.o,.%.d,$$(strip $$(addprefix $2,$$(call flavor-get-OFILES,$1))))
+
+# Add include directories from the list in INCDIRS
+$$(strip $$(addprefix $2,$$(call flavor-get-OFILES,$1))): CPPFLAGS += $$(addprefix -I$$(topsrc_dir)/,$$(call flavor-get-INCDIRS,$1))
+$$(strip $$(addprefix $2,$$(call flavor-get-OFILES,$1))): CPPFLAGS += $$(call flavor-get-DEFINES,$1) $$(HOST)
+
+
+$$(foreach source,$$(filter %.cc,$$(call flavor-get-SOURCES,$1)), \
+  $$(eval $$(call gen-rules-CC,HOST,$2,$$(source),$4)))
+$$(foreach source,$$(filter %.S,$$(call flavor-get-SOURCES,$1)), \
+  $$(eval $$(call gen-rules-S,HOST,$2,$$(source),$4)))
+$$(foreach source,$$(filter-out %.cc %.S,$$(call flavor-get-SOURCES,$1)), \
+  $$(warning Ignoring source $$(source) (no rules to compile it)))
+
+endef
+###########################################################################
+$(topsrc_dir)/bin/coff2noff:
+	$(MAKE) -C $(topsrc_dir)/bin TARGET=HOST coff2noff
+
+.PHONY: mips-progs
+mips-progs:
+
+define nachos-userprog-rules # 1:program 2:serie 3:[target]
+#$$(warning defining NachOS userprog $3 with program $1)
+
+all: mips-progs
+
+UFLAVORS_LIST:=$(UFLAVORS_LIST) $2
+
+ifeq ($$(strip $$(call userprog-get-SOURCES,$1)),)
+$$(error No sources in program $1. Do you define this program?)
+endif
+
+mips-progs: $3
+
+$3: TARGET=MIPS
+$3: LDFLAGS+=-Wl,-T,$(topsrc_dir)/test/script -Wl,-N
+# LB: Caution! start.o should appear *before* $^ for the load!
+$3.coff: %.coff: $$(strip $$(call addprefix-dir,$$(call serie-get-PREFIX,$2),$$(call userprog-get-OFILES,$1))) $(topsrc_dir)/test/script
+	$$(lko_V)$$(LINK.o) $$(call addprefix-dir,$$(call serie-get-PREFIX,$2),start.o) \
+		$$(filter-out %start.o,$$(filter %.o,$$^)) $$(LOADLIBES) $$(LDLIBS) -o $$@
+
+# Avoid leaving .coff files after successful compilation
+.INTERMEDIATE: $$(patsubst %,%.coff,$3)
+
+$3: %: %.coff $$(topsrc_dir)/bin/coff2noff
+	$$(c2n_V)$$(topsrc_dir)/bin/coff2noff $$< $$@ && chmod +x $$@
+
+clean::
+	$$(RM) $3 $3.coff
+
+serie_$2_SOURCES+=$$(call userprog-get-SOURCES,$1)
+
+$$(foreach source,$$(filter-out %.c %.S,$$(call userprog-get-SOURCES,$1)), \
+  $$(warning Ignoring source $$(source) (no rules to compile it)))
+
+endef
+###############
+define nachos-userprog-obj-rules # 1:serie
+#$$(warning defining NachOS userprog serie $1)
+  $$(eval $$(call nachos-userprog-obj-rules2,$1,$$(call serie-get-PREFIX,$1),$$(call serie-get-SOURCES,$1),\
+     $$(call serie-get-OFILES,$1)))
+endef
+
+objs-to-depends=$(foreach o,$1, $(filter-out ./,$(dir $o))$(patsubst %.o,.$2%.d,$(notdir $o)))
+addprefix-dir=$(foreach o,$2, $(filter-out ./,$(dir $o))$(addprefix $1,$(notdir $o)))
+
+define nachos-userprog-obj-rules2 # 1:serie 2:prefix 3:sources 4:ofiles
+#$$(warning defining NachOS userprog serie $1/$2/$3/$4)
+
+ifneq ($$(MAKECMDGOALS),clean)
+-include $$(call objs-to-depends,$4,$2)
+endif
+
+#$$(warning $$(call addprefix-dir,$2,$4): $$(filter-out %.d,$$(MAKEFILE_LIST)))
+$$(call addprefix-dir,$2,$4): $$(filter-out %.d,$$(MAKEFILE_LIST))
+$$(call objs-to-depends,$4,$2): $$(filter-out %.d,$$(MAKEFILE_LIST))
+
+clean::
+	$$(RM) $$(call addprefix-dir,$2,$4)
+	$$(RM) $$(call objs-to-depends,$4,$2)
+
+# Add include directories from the list in INCDIRS
+#$$(warning $$(call addprefix-dir,$2,$4): CPPFLAGS += $$(call serie-get-CPPFLAGS,$1))
+$$(call addprefix-dir,$2,$4): CPPFLAGS += $$(call serie-get-CPPFLAGS,$1)
+$$(call addprefix-dir,$2,$4): CFLAGS += -DIN_USER_MODE -Wall
+
+$$(foreach source,$$(filter %.c,$3), \
+  $$(eval $$(call gen-rules-C,MIPS,$2,$$(source))))
+$$(foreach source,$$(filter %.S,$3), \
+  $$(eval $$(call gen-rules-S,MIPS,$2,$$(source))))
+
+endef
+
+###########################################################################
+OLD_GCC_HOST:=$(shell if ! $(HOST_CC) --version | grep -sq ' 4\.' ; then echo yes ; fi)
+OLD_GCC_MIPS:=$(shell if ! $(MIPS_CC) --version | grep -sq ' 4\.' ; then echo yes ; fi)
+COMPILE.S = $(CC) $(ASFLAGS) $(CPPFLAGS) $(TARGET_MACH) -c
+COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+COMPILE.cc = $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+
+define gen-rules-lang2 # 1:HOST/MIPS 2:prefix 3:depend 4:target 5:source 6:lang 7:show_prefix
+$4: TARGET=$1
+$4: $5
+	$$(dep_V)mkdir -p $$(dir $$@)
+	$$($7_V)$$(COMPILE.$6) $$(if $$(OLD_GCC_$1),,-MMD -MF $3) $$(OUTPUT_OPTION) $$<
+	$$(dep_V)$$(if $$(OLD_GCC_$1),$$(patsubst -c,-MM,$$(COMPILE.$6)) $$< > $$(call objs-to-depends,$3,$2))
+	$$(dep_V)cp $$(call objs-to-depends,$3,$2) $$(call objs-to-depends,$3,$2)d && \
+	sed < $$(call objs-to-depends,$3,$2)d -e 's/^.*://' -e 's/\([^\\]\)$$$$/\1:/' >> $$(call objs-to-depends,$3,$2) && \
+	rm $$(call objs-to-depends,$3,$2)d
+endef
+
+define gen-rules-lang # 1:HOST/MIPS 2:prefix 3:source 4:lang 5:show_prefix
+$$(eval $$(call gen-rules-lang2,$1,$2,$$(call objs-to-depends,$$(patsubst %.$4,%.o,$3),$2),$$(call addprefix-dir,$2,$$(patsubst %.$4,%.o,$3)),$3,$4,$5))
+endef
+define gen-rules-C # 1:HOST/MIPS 2:prefix 3:source
+$$(eval $$(call gen-rules-lang,$1,$2,$3,c,cc))
+endef
+define gen-rules-CC # 1:HOST/MIPS 2:prefix 3:source
+$$(eval $$(call gen-rules-lang,$1,$2,$3,cc,cxx))
+endef
+define gen-rules-S # 1:HOST/MIPS 2:prefix 3:source
+$$(eval $$(call gen-rules-lang,$1,$2,$3,S,s))
+endef
+###########################################################################
+
+# flavor
+flavor-get-SOURCES=$(flavor_$1_SOURCES)
+flavor-get-DEFINES=$(flavor_$1_DEFINES)
+flavor-get-INCDIRS=$(flavor_$1_INCDIRS)
+flavor-get-OFILES=$(foreach e,cc S,$(patsubst %.$e,%.o,$(filter %.$e,$(call flavor-get-SOURCES,$1))))
+
+define define-flavor # 1:name 2:features 3:sources 4:defines
+  flavor_$1_FEATURES=$$(sort base $2 $$(foreach f,$2,$$($$f_DEP)))
+  $$(foreach f,$$(flavor_$1_FEATURES),$$(if $$($$f_DEP_ALT),\
+	$$(if $$(filter $$($$f_DEP_ALT),$$(flavor_$1_FEATURES)),,\
+	$$(error flavor $1 require one of the features $$(foreach g,$$($$f_DEP_ALT),"$$g") because it includes the feature "$$f"))\
+  ))
+  $$(foreach f,$$(flavor_$1_FEATURES),$$(if $$($$f_CONFLICTS),\
+	$$(foreach g,$$(filter $$($$f_CONFLICTS),$$(flavor_$1_FEATURES)),\
+		$$(error flavor $1 cannot have feature "$$f" and feature "$$g"))\
+  ))
+  flavor_$1_SOURCES=$$(sort $$(foreach f,$$(flavor_$1_FEATURES),$$($$f_SRC)) $3) 
+  flavor_$1_DEFINES=$$(foreach f,$$(flavor_$1_FEATURES),$$($$f_CPPFLAGS)) $4 
+  flavor_$1_INCDIRS=$$(sort $$(foreach f,$$(flavor_$1_FEATURES),$$($$f_INCDIRS)))
+  #$$(warning flavor $1 defined with features: $$(flavor_$1_FEATURES))
+  #$$(warning flavor $1 defined with sources: $$(flavor_$1_SOURCES))
+  #$$(warning flavor $1 defined with CPPFLAGS: $$(flavor_$1_DEFINES))
+  #$$(warning flavor $1 defined with INCDIRS: $$(flavor_$1_INCDIRS))
+  FLAVORS_LIST:=$$(FLAVORS_LIST) $1
+endef
+
+# userprog
+userprog-get-SOURCES=$(userprog_$1_SOURCES)
+userprog-get-OFILES=$(foreach e,c S,$(patsubst %.$e,%.o,$(filter %.$e,$(call userprog-get-SOURCES,$1))))
+
+define define-userprog # 1:name 2:sources
+  userprog_$1_SOURCES=$$(sort $2 start.S)
+  USERPROGS_LIST:=$$(USERPROGS_LIST) $1
+endef
+
+serie-get-SOURCES=$(sort $(serie_$1_SOURCES))
+serie-get-PREFIX=$(strip $(serie_$1_PREFIX))
+serie-get-CPPFLAGS=$(serie_$1_DEFINES) $(addprefix -I$(topsrc_dir)/,$(sort $(serie_$1_INCDIRS)))
+serie-get-OFILES=$(foreach e,c S,$(patsubst %.$e,%.o,$(filter %.$e,$(call serie-get-SOURCES,$1))))
+
+define define-serie # 1:serie_name 2:prefix 3:defines 4:incdirs
+  serie_$1_PREFIX=$2 
+  serie_$1_DEFINES=$3 
+  serie_$1_INCDIRS=$4 userprog threads
+endef
+
+#include $(topsrc_dir)/Makefile.define-flavors
+#include $(topsrc_dir)/Makefile.define-userprogs
+include $(topsrc_dir)/Makefile.define-origin
+# defining original programs
+$(foreach p,$(ORIG_USERPROGS),\
+  $(eval $(call define-userprog,$p,$p.c start.S)))
+
+# defining extra programs
+include $(topsrc_dir)/Makefile.define-user
+$(foreach p,$(patsubst %.c,%,\
+		$(filter-out $(USERPROG_NOPROGRAM) \
+			$(addsuffix .c,$(ORIG_USERPROGS)),\
+		$(shell find ../test -iname "*.c" -printf "%P\n"))),\
+	$(eval $(call define-userprog,$p,\
+		$p.c $(USERPROG_LIBS) $($p_EXTRA_SOURCES),,userprog threads)))
+
+
+SERIES?=AUTOLOAD
+
+$(foreach s,$(SERIES),\
+  $(eval $(call define-serie,$s,$($s_PREFIX),$($s_CPPFLAGS),userprog threads)) \
+  $(foreach f,$($s_KERNELS),\
+    $(eval $(call nachos-kernel-rules,$f,$($s_PREFIX)$f-,nachos$($s_SUFFIX)-$f,$($s_CPPFLAGS))))\
+  $(foreach p,$(patsubst all,$(USERPROGS_LIST),$($s_USERPROGS)),\
+    $(eval $(call nachos-userprog-rules,$p,$s,$p$($s_SUFFIX),$($s_CPPFLAGS)))))
+
+$(foreach f,$(sort $(UFLAVORS_LIST)),\
+  $(eval $(call nachos-userprog-obj-rules,$f)))
+

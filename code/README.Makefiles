@@ -1,0 +1,39 @@
+These Makefiles allow to easily compile different flavors of nachos.
+
+  In the original Nachos sources, one flavor of nachos was compiled per
+directory (threads userprog filesys network vm), and the nachos kernel was
+always named 'nachos'
+
+
+  In the current layout, nothing is compiled in sources directories.
+Compilation is done in the build-origin and/or the build directories.
+Several flavors of nachos are compiled in the same directory: object files
+are prefixed by the flavor name (flavor-file.o) and NachOS binaries are
+suffixed by the flavor name (nachos-flavor).
+
+  In the build-origin/ directory, only the five initial flavors (threads
+userprog filesys network vm) are compiled, and only the four initial user
+programs (halt, shell, matmult and shell) are compiled. All these compilations
+are done *without* the -DCHANGED flags. It means that they should *always*
+compile if "#ifdef CHANGED" are used correctly.
+
+  In the build/ directory, all NachOS flavors listed in USER_FLAVORS are
+compiled. You can edit Makefile.define-user to add/remove flavors to this
+list. The file already contains (commented-out) an example of how to define a
+'step2' flavor for the synchconsole.
+  Similarly, all NachOS user programs are compiled. By default, there is one
+program per C source file in test/ directory. You can edit
+Makefile.define-user to add/remove NachOS user programs.
+
+  Makefile.define-origin defines flavors and userprogram included in
+the initial version of NachOS. This file should *not* be modified.
+
+
+  Some global variable definition (CPPFLAGS, path to mips cross compiler, ...)
+can be changed in Makefile.sysdep.
+
+  By default, only a summary of compilation commands are displayed. This
+can be changed with the V paramater:
+make V=0 # the default, only a summary of commands
+make V=1 # all important commands are shown
+make V=2 # all commands are shown
