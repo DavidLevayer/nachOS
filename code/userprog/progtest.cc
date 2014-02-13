@@ -11,9 +11,12 @@
 #include "copyright.h"
 #include "system.h"
 #include "console.h"
-#include "synchconsole.h"
 #include "addrspace.h"
 #include "synch.h"
+
+#ifdef CHANGED
+  #include "synchconsole.h"
+#endif // CHANGED
 
 //----------------------------------------------------------------------
 // StartProcess
@@ -111,6 +114,7 @@ ConsoleTest (char *in, char *out)
       }
 }
 
+#ifdef CHANGED
 void
 SynchConsoleTest (char *in, char *out)
 {
@@ -120,3 +124,5 @@ SynchConsoleTest (char *in, char *out)
     synchconsole->SynchPutChar(ch);
     fprintf(stderr, "Solaris: EOF detected in SynchConsole!\n");
 }
+
+#endif //CHANGED

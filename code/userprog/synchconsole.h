@@ -1,4 +1,4 @@
-//#ifdef CHANGED
+#ifdef CHANGED
 #ifndef SYNCHCONSOLE_H
 #define SYNCHCONSOLE_H
 #include "copyright.h"
@@ -21,4 +21,4 @@ class SynchConsole {
 	Console *console;
 };
 #endif // SYNCHCONSOLE_H
-//#endif // CHANGED
+#endif // CHANGED

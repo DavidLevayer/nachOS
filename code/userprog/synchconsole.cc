@@ -1,4 +1,4 @@
-//#ifdef CHANGED
+#ifdef CHANGED
 
 #include "copyright.h"
 #include "console.h"
@@ -41,4 +41,4 @@ void SynchConsole::SynchGetString(char *s, int n)
 {
 	
 }
-//#endif // CHANGED
+#endif // CHANGED
