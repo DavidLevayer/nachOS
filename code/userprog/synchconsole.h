@@ -19,6 +19,7 @@ class SynchConsole {
 	// Unix fgets(3S)
 	private:
 	Console *console;
+	void copyStringFromMachine( int from, char *to, unsigned size);
 };
 #endif // SYNCHCONSOLE_H
 #endif // CHANGED

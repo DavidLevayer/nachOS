@@ -128,6 +128,19 @@ Yield:
 	syscall
 	j	$31
 	.end Yield
+	
+#ifdef CHANGED
+	.globl PutChar
+	.ent 	PutChar
+
+PutChar:
+	addiu $2,$0,SC_PutChar /*on place la valeur de l appel systeme dans le registre r2. Pour cela on fait une addition avec le registre r0 qui contient la valeur 0*/
+	syscall
+	j	$31
+	.end PutChar
+
+	
+#endif //CHANGED
 
 /* dummy function to keep gcc happy */
         .globl  __main

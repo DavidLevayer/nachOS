@@ -30,6 +30,10 @@
 #define SC_Fork		9
 #define SC_Yield	10
 
+#ifdef CHANGED
+ #define SC_PutChar 11
+#endif //CHANGED
+
 #ifdef IN_USER_MODE
 
 // LB: This part is read only on compiling the test/*.c files.
@@ -127,6 +131,10 @@ void Fork (void (*func) ());
  * or not. 
  */
 void Yield ();
+
+#ifdef CHANGED
+void PutChar(char c);
+#endif // CHANGED
 
 #endif // IN_USER_MODE
 
