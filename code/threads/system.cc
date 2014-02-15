@@ -29,6 +29,12 @@ SynchDisk *synchDisk;
 
 #ifdef USER_PROGRAM		// requires either FILESYS or FILESYS_STUB
 Machine *machine;		// user program memory and registers
+    /*
+    Partie II, question 4.4, ajout en variable globale de la console
+    */
+	#ifdef CHANGED 
+		SynchConsole *synchconsole;
+	#endif //CHANGED
 #endif
 
 #ifdef NETWORK
@@ -157,6 +163,12 @@ Initialize (int argc, char **argv)
 
 #ifdef USER_PROGRAM
     machine = new Machine (debugUserProg);	// this must come first
+    /*
+    Partie II, question 4.4, initialisation de la console asynchrone
+    */
+    #ifdef CHANGED
+    	synchconsole = new SynchConsole(NULL,NULL);
+    #endif //CHANGED
 #endif
 
 #ifdef FILESYS
@@ -186,6 +198,12 @@ Cleanup ()
 
 #ifdef USER_PROGRAM
     delete machine;
+    /*
+    Partie II, question 4.4, supression de la console asynchrone
+    */
+    #ifdef CHANGED 
+    	delete synchconsole;
+    #endif //CHANGED
 #endif
 
 #ifdef FILESYS_NEEDED

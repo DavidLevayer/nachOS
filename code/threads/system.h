@@ -30,6 +30,14 @@ extern Statistics *stats;	// performance metrics
 extern Timer *timer;		// the hardware alarm clock
 
 #ifdef USER_PROGRAM
+    /*
+    Partie II, question 4.4, ajout en variable globale de la console
+    */
+	#ifdef CHANGED
+		#include "synchconsole.h"
+		extern SynchConsole *synchconsole;
+	#endif //CHANGED
+		
 #include "machine.h"
 extern Machine *machine;	// user program memory and registers
 #endif
