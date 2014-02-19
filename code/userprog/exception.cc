@@ -87,26 +87,33 @@ ExceptionHandler (ExceptionType which)
             interrupt->Halt();
             break;
           }
-          case SC_Exit:{
+          case SC_Exit:{ // cas appelé lors d'un fin de programme sans appel à la fonction Halt()
+            //int valRetour = machine->ReadRegister(2); // registre contenant la valeur de retour
             break;
           }
           case SC_Yield:{
             break;
           }
           case SC_PutChar:{
-            int c = machine->ReadRegister(4);
+            int c = machine->ReadRegister(4); // registre contenant le parametre de la fonction appelée
             DEBUG('a',"appel de la fonction SynchPutChar\n");
             synchconsole->SynchPutChar((char)c);
             DEBUG('a',"\nfin d'appel en mode kernel\n");
-
             break;
           }
           case SC_SynchPutString:{
-            int c = machine->ReadRegister (4);
-            char to[MAX_STRING_SIZE];
-            synchconsole->CopyStringFromMachine(c, to, MAX_STRING_SIZE);
+            int c = machine->ReadRegister (4); // recupération de la chaine de caractère
+            char* to = new char[MAX_STRING_SIZE]; // buffer
+            synchconsole->CopyStringFromMachine(c, to, MAX_STRING_SIZE); // copie chaine mips vers chaine Linux
             DEBUG('a',"appel système de la fonction SynchPutString\n");
             synchconsole->SynchPutString(to);
+            delete [] to; //desallocation du buffer
+            break;
+          }
+          case SC_SynchGetChar:{
+            char c = synchconsole->SynchGetChar();
+            printf("%c",c);
+            machine->WriteRegister(2,(int)c);
             break;
           }
           default :{
