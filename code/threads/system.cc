@@ -33,7 +33,7 @@ Machine *machine;		// user program memory and registers
     Partie II, question 4.4, ajout en variable globale de la console
     */
 	#ifdef CHANGED 
-		SynchConsole *synchconsole;
+		SynchConsole *synchconsole = NULL;
 	#endif //CHANGED
 #endif
 
