@@ -90,12 +90,23 @@ ExceptionHandler (ExceptionType which)
           case SC_Exit:{
             break;
           }
+          case SC_Yield:{
+            break;
+          }
           case SC_PutChar:{
             int c = machine->ReadRegister(4);
-            printf("appel de la fonction SynchPutChar en mode kernel\n");
+            DEBUG('a',"appel de la fonction SynchPutChar\n");
             synchconsole->SynchPutChar((char)c);
-            printf("\nfin d'appel en mode kernel\n");
+            DEBUG('a',"\nfin d'appel en mode kernel\n");
 
+            break;
+          }
+          case SC_SynchPutString:{
+            int c = machine->ReadRegister (4);
+            char to[MAX_STRING_SIZE];
+            synchconsole->CopyStringFromMachine(c, to, MAX_STRING_SIZE);
+            DEBUG('a',"appel système de la fonction SynchPutString\n");
+            synchconsole->SynchPutString(to);
             break;
           }
           default :{

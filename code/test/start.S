@@ -138,7 +138,14 @@ PutChar:
 	syscall
 	j	$31
 	.end PutChar
+	.globl SynchPutString
+	.ent SynchPutString
 
+SynchPutString:
+	addiu $2,$0,SC_SynchPutString
+	syscall
+	j	$31
+	.end SynchPutString
 	
 #endif //CHANGED
 

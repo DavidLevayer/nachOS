@@ -16,10 +16,11 @@ class SynchConsole {
 	// Unix getchar(3S)
 	void SynchPutString(const char *s); // Unix puts(3S)
 	void SynchGetString(char *s, int n);
+	void CopyStringFromMachine( int from, char *to, unsigned size);
 	// Unix fgets(3S)
 	private:
 	Console *console;
-	void copyStringFromMachine( int from, char *to, unsigned size);
+	
 };
 #endif // SYNCHCONSOLE_H
 #endif // CHANGED

@@ -35,15 +35,29 @@ char SynchConsole::SynchGetChar()
 }
 void SynchConsole::SynchPutString(const char s[])
 {
+	int i = 0;
 
+	while(*(s+i)!='\0'){
+		SynchPutChar(*(s+i));
+		i++;
+	}
 }
 void SynchConsole::SynchGetString(char *s, int n)
 {
 	
 }
 
-void copyStringFromMachine( int from, char *to, unsigned size)
+/*
+*@param : from -> adresse physique vers la chaine mips
+*/
+void SynchConsole::CopyStringFromMachine( int from, char *to, unsigned size)
 {
-	
+	unsigned i = 0;
+
+	while((i<size)&&(machine->mainMemory[from+i]!='\0')){
+		*(to+i)= machine->mainMemory[from+i];
+		i++;
+	}
+	*(to+i)='\0';
 }
 #endif // CHANGED
