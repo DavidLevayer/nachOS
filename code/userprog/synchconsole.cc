@@ -42,9 +42,22 @@ void SynchConsole::SynchPutString(const char s[])
 		i++;
 	}
 }
+/*
+* fonction fait sur le modele de la fonction noyau fgets 
+"fgets() reads in at most one less than size characters from stream and stores them into the buffer pointed to by s.  Reading stops after an
+       EOF  or  a newline.  If a newline is read, it is stored into the buffer.  A terminating null byte ('\0') is stored after the last character
+       in the buffer."
+D'après le man.
+*/
 void SynchConsole::SynchGetString(char *s, int n)
 {
-	
+	int i = 0;
+	char c;
+	while((i<n)&&((c=SynchGetChar())!=EOF)&&(c!='\n')){
+		*(s+i)=c;
+		i++;
+	}
+	*(s+i) = '\0';
 }
 
 /*
@@ -59,5 +72,15 @@ void SynchConsole::CopyStringFromMachine( int from, char *to, unsigned size)
 		i++;
 	}
 	*(to+i)='\0';
+}
+
+void SynchConsole::CopyMachineFromString(char* from, int to, unsigned size){
+	unsigned i = 0;
+
+	while((i<size)&&(*(from+i)!='\0')){
+		machine->mainMemory[to+i]=*(from+i);
+		i++;
+	}
+	machine->mainMemory[to+i]='\0';
 }
 #endif // CHANGED
