@@ -6,6 +6,8 @@
 #include "synch.h"
 #include "synchconsole.h"
 
+#define NBREMAXCARACTENTIER 12 //entier signé --> -2 147 483 648 à 2 147 483 647 soit 11 caractères max avec le "-"
+
 static Semaphore *readAvail;
 static Semaphore *writeDone;
 static void ReadAvail(int arg) { readAvail->V(); }
@@ -58,6 +60,26 @@ void SynchConsole::SynchGetString(char *s, int n)
 		i++;
 	}
 	*(s+i) = '\0';
+}
+
+void SynchConsole::SynchPutInt(int n){
+	
+	char* string = new char[NBREMAXCARACTENTIER];
+	snprintf(string,NBREMAXCARACTENTIER,"%d",n); //ecrit n dans string 
+	SynchPutString(string);
+
+	delete [] string;
+}
+
+void SynchConsole::SynchGetInt( int *n){
+	int* i = new int;
+	char* string = new char[NBREMAXCARACTENTIER];
+	SynchGetString(string,NBREMAXCARACTENTIER);
+	sscanf(string,"%d",i);
+
+	*(int*)&machine->mainMemory[*n]=*i; // syntaxe trouvée dans translate.cc dans la fonction writeMem pour écrire 4 octets
+	delete [] string;
+	delete i;
 }
 
 /*

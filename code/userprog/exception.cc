@@ -125,6 +125,18 @@ ExceptionHandler (ExceptionType which)
             delete [] from;
             break;
           }
+          case SC_SynchPutInt:{
+            int entier = machine->ReadRegister(4);
+            synchconsole->SynchPutInt(entier);
+            break;
+          }
+          case SC_SynchGetInt:{
+            int* n = new int;
+            *n = machine->ReadRegister(4);
+            synchconsole->SynchGetInt(n);
+            delete n;
+            break;
+          }
           default :{
             printf("Unexpected user mode exception %d %d\n", which, type);
             ASSERT(FALSE);
@@ -138,4 +150,3 @@ ExceptionHandler (ExceptionType which)
     // End of addition
 
 }
-
