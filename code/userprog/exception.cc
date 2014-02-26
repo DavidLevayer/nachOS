@@ -25,6 +25,10 @@
 #include "system.h"
 #include "syscall.h"
 
+#ifdef CHANGED
+#include "userthread.h"
+#endif
+
 //----------------------------------------------------------------------
 // UpdatePC : Increments the Program Counter register in order to resume
 // the user program immediately after the "syscall" instruction.
@@ -135,6 +139,17 @@ ExceptionHandler (ExceptionType which)
             *n = machine->ReadRegister(4);
             synchconsole->SynchGetInt(n);
             delete n;
+            break;
+          }
+          case SC_ThreadCreate:{
+            int addrFunction = machine->ReadRegister(4);
+            int addrArgs = machine->ReadRegister(5);
+            int result = do_UserThreadCreate(addrFunction, addrArgs);
+            machine->WriteRegister(2,result);
+            break;
+          }
+          case SC_ThreadExit:{
+            do_UserThreadExit();
             break;
           }
           default :{
