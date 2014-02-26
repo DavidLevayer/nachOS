@@ -82,7 +82,9 @@ void
 ConsoleTest (char *in, char *out)
 {
     char ch;
+    #ifdef CHANGED
     delete synchconsole; 
+    #endif //CHANGED
     console = new Console (in, out, ReadAvail, WriteDone, 0);
     readAvail = new Semaphore ("read avail", 0);
     writeDone = new Semaphore ("write done", 0);
@@ -93,10 +95,13 @@ ConsoleTest (char *in, char *out)
 	  readAvail->P ();	// wait for character to arrive
 	  ch = console->GetChar ();
 
-      if(ch == EOF)
-        return;
-
-      if(ch != '\n') 
+      if(ch == EOF){
+        #ifdef CHANGED
+        synchconsole = new SynchConsole(NULL,NULL);
+        #endif //CHANGED
+        break;
+      }
+      if(ch != '\n')
       {
         console->PutChar ('<');
         writeDone->P ();  // wait for write to finish
@@ -105,7 +110,7 @@ ConsoleTest (char *in, char *out)
 	  console->PutChar (ch);	// echo it!
       writeDone->P ();  // wait for write to finish
 
-      if(ch != '\n') 
+      if(ch != '\n')
       {
         console->PutChar ('>');
 	   writeDone->P ();	// wait for write to finish
