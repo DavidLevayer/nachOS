@@ -82,7 +82,7 @@ void
 ConsoleTest (char *in, char *out)
 {
     char ch;
-
+    delete synchconsole; 
     console = new Console (in, out, ReadAvail, WriteDone, 0);
     readAvail = new Semaphore ("read avail", 0);
     writeDone = new Semaphore ("write done", 0);
