@@ -4,6 +4,6 @@ int main(){
 	
     int i;
     SynchGetInt(&i);
-    //SynchPutInt(i); à décommenter si on veut voir que l'affectation de i fonctionne
+    //SynchPutInt(i); //à décommenter si on veut voir que l'affectation de i fonctionne
     return 0;
 }

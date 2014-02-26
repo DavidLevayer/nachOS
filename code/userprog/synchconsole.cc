@@ -77,7 +77,7 @@ void SynchConsole::SynchGetInt( int *n){
 	SynchGetString(string,NBREMAXCARACTENTIER);
 	sscanf(string,"%d",i);
 
-	*(int*)&machine->mainMemory[*n]=*i; // syntaxe trouvée dans translate.cc dans la fonction writeMem pour écrire 4 octets
+	machine->WriteMem(*n,4,*i);
 	delete [] string;
 	delete i;
 }
@@ -88,21 +88,26 @@ void SynchConsole::SynchGetInt( int *n){
 void SynchConsole::CopyStringFromMachine( int from, char *to, unsigned size)
 {
 	unsigned i = 0;
+	int res;
 
-	while((i<size)&&(machine->mainMemory[from+i]!='\0')){
-		*(to+i)= machine->mainMemory[from+i];
+	while((i<size)&&(machine->ReadMem(from+i,1,&res))){
+		*(to+i)= (char)res;
 		i++;
 	}
 	*(to+i)='\0';
+
 }
 
 void SynchConsole::CopyMachineFromString(char* from, int to, unsigned size){
 	unsigned i = 0;
+	int res;
 
 	while((i<size)&&(*(from+i)!='\0')){
-		machine->mainMemory[to+i]=*(from+i);
+		res = *(from+i);
+		machine->WriteMem(to+i,1,res);
 		i++;
 	}
-	machine->mainMemory[to+i]='\0';
+	machine->WriteMem(to+i,1,'\0');
+
 }
 #endif // CHANGED
