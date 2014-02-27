@@ -1,5 +1,5 @@
 #include "syscall.h"
-#define tailleMaXChaine 8
+#define tailleMaXChaine 256
 
 
 int

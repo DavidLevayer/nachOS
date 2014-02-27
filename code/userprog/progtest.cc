@@ -99,7 +99,7 @@ ConsoleTest (char *in, char *out)
         #ifdef CHANGED
         synchconsole = new SynchConsole(NULL,NULL);
         #endif //CHANGED
-        break;
+        return;
       }
       if(ch != '\n')
       {
