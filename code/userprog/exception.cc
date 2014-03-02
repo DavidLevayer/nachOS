@@ -141,14 +141,14 @@ ExceptionHandler (ExceptionType which)
             delete n;
             break;
           }
-          case SC_ThreadCreate:{
+          case SC_UserThreadCreate:{
             int addrFunction = machine->ReadRegister(4);
             int addrArgs = machine->ReadRegister(5);
             int result = do_UserThreadCreate(addrFunction, addrArgs);
             machine->WriteRegister(2,result);
             break;
           }
-          case SC_ThreadExit:{
+          case SC_UserThreadExit:{
             do_UserThreadExit();
             break;
           }

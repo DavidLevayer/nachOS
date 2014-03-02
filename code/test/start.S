@@ -184,17 +184,20 @@ SynchGetInt:
 	j    $31
 	.end SynchGetInt
 
-ThreadCreate:
-	addiu $2,$0,SC_ThreadCreate
+UserThreadCreate:
+	addiu $2,$0,SC_UserThreadCreate
 	syscall
 	j    $31
-	.end ThreadCreate
+	.end UserThreadCreate
 
-ThreadExit:
-	addiu $2,$0,SC_ThreadExit
+	.globl UserThreadExit
+	.ent UserThreadExit
+
+UserThreadExit:
+	addiu $2,$0,SC_UserThreadExit
 	syscall
 	j    $31
-	.end ThreadExit
+	.end UserThreadExit
 
 #endif //CHANGED
 
