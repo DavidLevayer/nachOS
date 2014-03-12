@@ -1,8 +1,14 @@
 #ifdef CHANGED
 #include "userthread.h"
+#include "addrspace.h"
+#include "system.h"
 
 static void StartUserThread(int f){
-
+	
+	OpenFile* fichier = new OpenFile(f);
+	AddrSpace* mySpace = new AddrSpace(fichier);
+	mySpace->InitRegisters();
+	machine->Run();
 }
 
 int do_UserThreadCreate(int f, int arg)
