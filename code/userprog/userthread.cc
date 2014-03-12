@@ -4,10 +4,18 @@
 #include "system.h"
 
 static void StartUserThread(int f){
-	
-	OpenFile* fichier = new OpenFile(f);
-	AddrSpace* mySpace = new AddrSpace(fichier);
-	mySpace->InitRegisters();
+
+	for(int i=0;i<NumTotalRegs;i++)
+	{
+		machine->WriteRegister(i,0);
+	}
+
+	machine->WriteRegister(PCReg,f);
+	machine->WriteRegister(NextPCReg,f+4);
+
+	// On cherche l'adresse où placer la stack du nouveau thread
+	// TODO
+
 	machine->Run();
 }
 
@@ -24,6 +32,7 @@ int do_UserThreadCreate(int f, int arg)
 
 void do_UserThreadExit()
 {
+
 	return;
 }
 
