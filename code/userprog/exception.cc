@@ -117,7 +117,7 @@ ExceptionHandler (ExceptionType which)
           case SC_SynchGetChar:{
             char c = synchconsole->SynchGetChar();
             //printf("%c",c);
-            machine->WriteRegister(2,(int)c);
+            machine->WriteRegister(2,(int)c); // ecriture dans le registre 2 du résultat de la fonction
             break;
           }
           case SC_SynchGetString:{
