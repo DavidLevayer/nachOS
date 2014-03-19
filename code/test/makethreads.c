@@ -28,7 +28,7 @@ int main () {
 	f = afficheString;
     res = UserThreadCreate(f,"coucou cousin");
 
-    f = afficheString;
+    f = affiche;
     res = UserThreadCreate(f,&i);
     /* not reached */
     return res;

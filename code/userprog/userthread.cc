@@ -34,9 +34,6 @@ static void StartUserThread(int f){
 	machine->WriteRegister(NextPCReg,restor->function+4);
 	//initialisation du pointeur de pile
 	// TODO
-
-	int b = currentThread->space->BeginPointStack();
-	machine->WriteRegister(StackReg,b);
 	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
 	machine->Run();
 }
