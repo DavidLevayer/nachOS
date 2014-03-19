@@ -120,6 +120,11 @@ AddrSpace::AddrSpace (OpenFile * executable)
 			      noffH.initData.size, noffH.initData.inFileAddr);
       }
 
+      #ifdef CHANGED
+      bitmapThreadStack = new BitMap((int)(UserStackSize/(PagePerThread*PageSize)));
+      bitmapThreadStack[0] = 1;
+      #endif //CHANGED
+
 }
 
 //----------------------------------------------------------------------
@@ -132,6 +137,10 @@ AddrSpace::~AddrSpace ()
   // LB: Missing [] for delete
   // delete pageTable;
   delete [] pageTable;
+
+  #ifdef CHANGED
+   delete bitmapThreadStack;
+  #endif //CHANGED
   // End of modification
 }
 
@@ -175,6 +184,15 @@ AddrSpace::InitRegisters ()
 //
 //      For now, nothing!
 //----------------------------------------------------------------------
+
+#ifdef CHANGED
+int AddrSpace::BeginPointStack(){
+    int find = bitmapThreadStack->Find();
+    ASSERT(find != -1 );
+
+    return numPages*PageSize - find*PagePerThread*PageSize;
+}
+#endif //CHANGED
 
 void
 AddrSpace::SaveState ()

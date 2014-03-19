@@ -16,7 +16,15 @@
 #include "copyright.h"
 #include "filesys.h"
 
+#ifdef CHANGED
+  #include "bitmap.h"
+#endif //CHANGED
+
 #define UserStackSize		1024	// increase this as necessary!
+
+#ifdef CHANGED
+ #define PagePerThread 3
+#endif //CHANGED
 
 class AddrSpace
 {
@@ -28,6 +36,9 @@ class AddrSpace
 
     void InitRegisters ();	// Initialize user-level CPU registers,
     // before jumping to user code
+    #ifdef CHANGED
+   int BeginPointStack();
+    #endif //CHANGED
 
     void SaveState ();		// Save/restore address space-specific
     void RestoreState ();	// info on a context switch 
@@ -36,6 +47,10 @@ class AddrSpace
       TranslationEntry * pageTable;	// Assume linear page table translation
     // for now!
     unsigned int numPages;	// Number of pages in the virtual 
+
+    #ifdef CHANGED
+    BitMap* bitmapThreadStack;
+    #endif //CHANGED
     // address space
 };
 

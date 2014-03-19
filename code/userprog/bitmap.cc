@@ -18,12 +18,16 @@
 //----------------------------------------------------------------------
 
 BitMap::BitMap (int nitems)
-{
+{   
+    #ifdef CHANGED
+    ASSERT(nitems > 0);
+    #endif //CHANGED
+
     numBits = nitems;
     numWords = divRoundUp (numBits, BitsInWord);
     map = new unsigned int[numWords];
     for (int i = 0; i < numBits; i++)
-	Clear (i);
+	   Clear (i);
 }
 
 //----------------------------------------------------------------------

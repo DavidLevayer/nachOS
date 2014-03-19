@@ -4,7 +4,7 @@
 
 // la structure est mis dans le .cc pour éviter qu'elle ne soit utilisée en dehors de ce fichier
 struct Serialisation{
-	int f; // adresse du pointeur de fonction
+	int function; // adresse du pointeur de fonction
 	int arg; // adresse du pointeur des arguments
 };
 
@@ -20,14 +20,14 @@ static void StartUserThread(int f){
 	}
 
 	// pc sur l'adresse de la fonction
-	machine->WriteRegister(PCReg,restor->f);
+	machine->WriteRegister(PCReg,restor->function);
 	//écriture dans le registre 4 des arguments de la fonction
 	machine->WriteRegister(4,restor->arg);
 	// next pc sur l'adresse de la prochaine instruction
-	machine->WriteRegister(NextPCReg,restor->f+4);
+	machine->WriteRegister(NextPCReg,restor->function+4);
 	//initialisation du pointeur de pile
 	// TODO
-	//machine->WriteRegister(StackReg,currentThread->space)
+	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
 
 	machine->Run();
 	do_UserThreadExit();
@@ -44,9 +44,9 @@ int do_UserThreadCreate(int f, int arg)
 
 	// création de la structure pour pouvoir récupérer f et arg par la suite
 	Serialisation* save = new Serialisation;
-	save->f = f;
+	save->function = f;
 	save->arg = arg;
-// le fork positionne automatiquement space à la même adresse que le processus père
+	// le fork positionne automatiquement space à la même adresse que le processus père
 
 	newThread->Fork(StartUserThread,(int)save);
 	return 0;
@@ -59,7 +59,7 @@ void do_UserThreadExit()
 	delete currentThread->space;
 	//fin du thread
 	currentThread->Finish ();
-	delete currentThread; // pas sûr que ce soit la meilleure des choses à faire
+	//delete currentThread; // pas sûr que ce soit la meilleure des choses à faire
 }
 
 #endif // CHANGED
