@@ -144,7 +144,6 @@ ExceptionHandler (ExceptionType which)
           case SC_UserThreadCreate:{
             int addrFunction = machine->ReadRegister(4);
             int addrArgs = machine->ReadRegister(5);
-            printf("coucou je suis robair\n");
             int result = do_UserThreadCreate(addrFunction, addrArgs);
             machine->WriteRegister(2,result);
             break;

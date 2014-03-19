@@ -37,7 +37,6 @@ static void StartUserThread(int f){
 
 	int b = currentThread->space->BeginPointStack();
 	machine->WriteRegister(StackReg,b);
-	printf("beginPointStack=%d",b);
 	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
 	machine->Run();
 }

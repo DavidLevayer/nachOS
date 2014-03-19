@@ -2,18 +2,31 @@
 
 void affiche(int i) {
 	SynchPutString("Demarrage d'un thread...\n");
-	SynchPutInt(i);
-	
+	SynchPutInt(*(int*)i);
+	SynchPutString("\nFin du thread\n");
+	UserThreadExit();
+}
+
+void afficheString(char* s) {
+	SynchPutString("Demarrage d'un thread...\n");
+	SynchPutString((char*)s);
+	SynchPutString("\nFin du thread\n");
 	UserThreadExit();
 }
 
 
 int main () {	
-	int i = 999;
-	//void *f = SynchPutInt;
+	
 	SynchPutString("Demarrage du main...\n");
+
+	// Premier Thread
+	int i = 999;
 	void* f = affiche;
     int res = UserThreadCreate(f,&i);
+
+    // Second Thread
+	f = afficheString;
+    res = UserThreadCreate(f,"coucou cousin");
     /* not reached */
     return res;
 }
