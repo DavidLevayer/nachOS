@@ -4,8 +4,8 @@
 int
 main ()
 {	
-	int i = 4;
-	void *f = SynchPutInt;
+	int i = 'c';
+	void *f = PutChar;
     int res = UserThreadCreate(f,&i);
     /* not reached */
     return res;

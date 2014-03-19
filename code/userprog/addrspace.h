@@ -38,6 +38,10 @@ class AddrSpace
     // before jumping to user code
     #ifdef CHANGED
    int BeginPointStack();
+
+   int GetActiveThread();
+   void incActiveThread();
+   void decActiveThread();
     #endif //CHANGED
 
     void SaveState ();		// Save/restore address space-specific
@@ -50,6 +54,7 @@ class AddrSpace
 
     #ifdef CHANGED
     BitMap* bitmapThreadStack;
+    int activeThread;
     #endif //CHANGED
     // address space
 };

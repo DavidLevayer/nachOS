@@ -19,6 +19,8 @@ static void StartUserThread(int f){
 		machine->WriteRegister(i,0);
 	}
 
+	printf("coucou je m'appel bigue");
+
 	// pc sur l'adresse de la fonction
 	machine->WriteRegister(PCReg,restor->function);
 	//écriture dans le registre 4 des arguments de la fonction
@@ -29,6 +31,7 @@ static void StartUserThread(int f){
 	// TODO
 	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
 
+	printf("machine RUNNNNN \n"); 
 	machine->Run();
 	do_UserThreadExit();
 }
@@ -36,7 +39,7 @@ static void StartUserThread(int f){
 int do_UserThreadCreate(int f, int arg)
 {
 	Thread* newThread = new Thread("threadUser"); // sur l'appel system UserthreadCreat on crée un nouveau thread.
-
+	currentThread->space->incActiveThread();
 	if(newThread == NULL) {
 		DEBUG('t',"error in do_UserThreadCreate: thread null");
 		return -1;
@@ -48,7 +51,12 @@ int do_UserThreadCreate(int f, int arg)
 	save->arg = arg;
 	// le fork positionne automatiquement space à la même adresse que le processus père
 
+	printf("on va un FOOORk\n");
+
 	newThread->Fork(StartUserThread,(int)save);
+
+
+	while(newThread->space->GetActiveThread()!=0);
 	return 0;
 }
 
@@ -56,8 +64,9 @@ int do_UserThreadCreate(int f, int arg)
 void do_UserThreadExit()
 {	
 	//suppression de l'espace d'adressage du thread
-	delete currentThread->space;
+	//delete currentThread->space;
 	//fin du thread
+	currentThread->space->decActiveThread();
 	currentThread->Finish ();
 	//delete currentThread; // pas sûr que ce soit la meilleure des choses à faire
 }
