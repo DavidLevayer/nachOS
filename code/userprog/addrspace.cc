@@ -122,7 +122,7 @@ AddrSpace::AddrSpace (OpenFile * executable)
 
       #ifdef CHANGED
       bitmapThreadStack = new BitMap((int)(UserStackSize/(PagePerThread*PageSize)));
-      bitmapThreadStack[0] = 1;
+      bitmapThreadStack->Mark(0);
       #endif //CHANGED
 
 }
@@ -189,7 +189,6 @@ AddrSpace::InitRegisters ()
 int AddrSpace::BeginPointStack(){
     int find = bitmapThreadStack->Find();
     ASSERT(find != -1 );
-
     return numPages*PageSize - find*PagePerThread*PageSize;
 }
 #endif //CHANGED

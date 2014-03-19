@@ -20,7 +20,7 @@
   #include "bitmap.h"
 #endif //CHANGED
 
-#define UserStackSize		1024	// increase this as necessary!
+#define UserStackSize		2048	// increase this as necessary!
 
 #ifdef CHANGED
  #define PagePerThread 3

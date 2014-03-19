@@ -8,6 +8,8 @@ struct Serialisation{
 	int arg; // adresse du pointeur des arguments
 };
 
+Semaphore *waitThread = new Semaphore("thread",0);
+
 static void StartUserThread(int f){
 
 	//récupération du pointeur de fonction et des arguments de celle-ci
@@ -18,7 +20,10 @@ static void StartUserThread(int f){
 	{
 		machine->WriteRegister(i,0);
 	}
-
+	
+	ASSERT(restor!=NULL);
+	ASSERT(restor->function!=0);
+	ASSERT(restor->arg!=0);
 	// pc sur l'adresse de la fonction
 	machine->WriteRegister(PCReg,restor->function);
 	//écriture dans le registre 4 des arguments de la fonction
@@ -27,10 +32,10 @@ static void StartUserThread(int f){
 	machine->WriteRegister(NextPCReg,restor->function+4);
 	//initialisation du pointeur de pile
 	// TODO
-	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
-
+	int b = currentThread->space->BeginPointStack();
+	machine->WriteRegister(StackReg,b);
+	printf("beginPointStack=%d",b);
 	machine->Run();
-	do_UserThreadExit();
 }
 
 int do_UserThreadCreate(int f, int arg)
@@ -47,8 +52,8 @@ int do_UserThreadCreate(int f, int arg)
 	save->function = f;
 	save->arg = arg;
 	// le fork positionne automatiquement space à la même adresse que le processus père
-
 	newThread->Fork(StartUserThread,(int)save);
+	waitThread->P();
 	return 0;
 }
 
@@ -56,7 +61,8 @@ int do_UserThreadCreate(int f, int arg)
 void do_UserThreadExit()
 {	
 	//suppression de l'espace d'adressage du thread
-	delete currentThread->space;
+	//delete currentThread->space;
+	waitThread->V();
 	//fin du thread
 	currentThread->Finish ();
 	//delete currentThread; // pas sûr que ce soit la meilleure des choses à faire
