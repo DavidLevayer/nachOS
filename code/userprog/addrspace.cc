@@ -191,6 +191,16 @@ int AddrSpace::BeginPointStack(){
     ASSERT(find != -1 );
     return numPages*PageSize - find*PagePerThread*PageSize;
 }
+
+int AddrSpace::GetActiveThread(){
+  return activeThread;
+}
+void AddrSpace::incActiveThread(){
+  activeThread++;
+}
+void AddrSpace::decActiveThread(){
+  activeThread--;
+}
 #endif //CHANGED
 
 void

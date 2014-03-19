@@ -7,6 +7,7 @@ void affiche(int i) {
 	UserThreadExit();
 }
 
+
 int main () {	
 	int i = 999;
 	//void *f = SynchPutInt;

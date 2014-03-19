@@ -20,10 +20,12 @@ static void StartUserThread(int f){
 	{
 		machine->WriteRegister(i,0);
 	}
+
 	
 	ASSERT(restor!=NULL);
 	ASSERT(restor->function!=0);
 	ASSERT(restor->arg!=0);
+
 	// pc sur l'adresse de la fonction
 	machine->WriteRegister(PCReg,restor->function);
 	//écriture dans le registre 4 des arguments de la fonction
@@ -32,16 +34,18 @@ static void StartUserThread(int f){
 	machine->WriteRegister(NextPCReg,restor->function+4);
 	//initialisation du pointeur de pile
 	// TODO
+
 	int b = currentThread->space->BeginPointStack();
 	machine->WriteRegister(StackReg,b);
 	printf("beginPointStack=%d",b);
+	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
 	machine->Run();
 }
 
 int do_UserThreadCreate(int f, int arg)
 {
 	Thread* newThread = new Thread("threadUser"); // sur l'appel system UserthreadCreat on crée un nouveau thread.
-
+	currentThread->space->incActiveThread();
 	if(newThread == NULL) {
 		DEBUG('t',"error in do_UserThreadCreate: thread null");
 		return -1;
@@ -52,6 +56,7 @@ int do_UserThreadCreate(int f, int arg)
 	save->function = f;
 	save->arg = arg;
 	// le fork positionne automatiquement space à la même adresse que le processus père
+
 	newThread->Fork(StartUserThread,(int)save);
 	waitThread->P();
 	return 0;
@@ -64,6 +69,7 @@ void do_UserThreadExit()
 	//delete currentThread->space;
 	waitThread->V();
 	//fin du thread
+	currentThread->space->decActiveThread();
 	currentThread->Finish ();
 	//delete currentThread; // pas sûr que ce soit la meilleure des choses à faire
 }
