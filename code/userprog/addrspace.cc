@@ -188,19 +188,16 @@ AddrSpace::InitRegisters ()
 #ifdef CHANGED
 int AddrSpace::BeginPointStack(){
     int find = bitmapThreadStack->Find();
+    printf("find:%d\n",find);
     ASSERT(find != -1 );
+    currentThread->SetIdThread(find);
     return numPages*PageSize - find*PagePerThread*PageSize;
 }
 
-int AddrSpace::GetActiveThread(){
-  return activeThread;
+void AddrSpace::DealloateMapStack(){
+  bitmapThreadStack->Clear(currentThread->GetIdThread());
 }
-void AddrSpace::incActiveThread(){
-  activeThread++;
-}
-void AddrSpace::decActiveThread(){
-  activeThread--;
-}
+
 #endif //CHANGED
 
 void

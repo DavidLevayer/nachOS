@@ -44,7 +44,7 @@ static void StartUserThread(int f){
 int do_UserThreadCreate(int f, int arg)
 {
 	Thread* newThread = new Thread("threadUser"); // sur l'appel system UserthreadCreat on crée un nouveau thread.
-	currentThread->space->incActiveThread();
+
 	if(newThread == NULL) {
 		DEBUG('t',"error in do_UserThreadCreate: thread null");
 		return -1;
@@ -68,7 +68,7 @@ void do_UserThreadExit()
 	//delete currentThread->space;
 	waitThread->V();
 	//fin du thread
-	currentThread->space->decActiveThread();
+	currentThread->space->DealloateMapStack();
 	currentThread->Finish ();
 	//delete currentThread; // pas sûr que ce soit la meilleure des choses à faire
 }
