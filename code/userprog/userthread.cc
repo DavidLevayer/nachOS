@@ -34,6 +34,12 @@ static void StartUserThread(int f){
 	machine->WriteRegister(NextPCReg,restor->function+4);
 	//initialisation du pointeur de pile
 	// TODO
+<<<<<<< HEAD
+
+	//int b = currentThread->space->BeginPointStack();
+	//machine->WriteRegister(StackReg,b);
+=======
+>>>>>>> 94f8c7d88ae9c32bd63007ad3886183a5d7dbc2e
 	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
 	currentThread->Yield(); // afin qu'il ne garde pas la main jusqu'à sa fin de vie on lui fait rendre la main également
 	machine->Run();
