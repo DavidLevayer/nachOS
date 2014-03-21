@@ -22,12 +22,14 @@ int main () {
 	int i = 999;
 	void* f = affiche;
     int res = UserThreadCreate(f,&i);
+    SynchPutInt(88);
 
     SynchPutString("retour au main...\n");
 
     // Second Thread
 	f = afficheString;
     res = UserThreadCreate(f,"coucou cousin\n");
+
     SynchPutString("retour au main\n");
     PutChar('c');
 

@@ -88,6 +88,9 @@ ExceptionHandler (ExceptionType which)
         switch(type){
           case SC_Halt:{
             DEBUG('a', "Shutdown, initiated by user program.\n");
+            while(currentThread->space->NbreThread()>1)
+              currentThread->space->LockEndMain();
+            
             interrupt->Halt();
             break;
           }

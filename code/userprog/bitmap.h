@@ -42,6 +42,9 @@ class BitMap
     void Clear (int which);	// Clear the "nth" bit
     bool Test (int which);	// Is the "nth" bit set?
     int Find ();		// Return the # of a clear bit, and as a side
+    #ifdef CHANGED
+    int NbBitAt1(); //return number of 1 
+    #endif //CHANGED
     // effect, set the bit. 
     // If no bits are clear, return -1.
     int NumClear ();		// Return the number of clear bits

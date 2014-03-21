@@ -67,7 +67,7 @@ void do_UserThreadExit()
 {	
 	//suppression de l'espace d'adressage du thread
 	//delete currentThread->space;
-	//waitThread->V();
+	currentThread->space->FreeEndMain();
 	//fin du thread
 	currentThread->space->DealloateMapStack();
 	currentThread->Finish ();

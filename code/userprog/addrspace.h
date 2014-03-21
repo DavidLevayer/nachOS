@@ -17,14 +17,12 @@
 #include "filesys.h"
 
 #ifdef CHANGED
+  #define PagePerThread 2
   #include "bitmap.h"
+  #include "synch.h"
 #endif //CHANGED
 
 #define UserStackSize		1024	// increase this as necessary!
-
-#ifdef CHANGED
- #define PagePerThread 2
-#endif //CHANGED
 
 class AddrSpace
 {
@@ -39,6 +37,10 @@ class AddrSpace
     #ifdef CHANGED
    int BeginPointStack();
    void DealloateMapStack();
+
+   void LockEndMain();
+   void FreeEndMain();
+   int NbreThread();
     #endif //CHANGED
 
     void SaveState ();		// Save/restore address space-specific
@@ -51,6 +53,7 @@ class AddrSpace
 
     #ifdef CHANGED
     BitMap* bitmapThreadStack;
+    Semaphore* lockEndMain;
     #endif //CHANGED
     // address space
 };

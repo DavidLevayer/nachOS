@@ -19,8 +19,10 @@
 #include "system.h"
 #include "addrspace.h"
 #include "noff.h"
-
 #include <strings.h>		/* for bzero */
+#ifdef CHANGED
+#include "synch.h"
+#endif //CHANGED
 
 //----------------------------------------------------------------------
 // SwapHeader
@@ -123,6 +125,7 @@ AddrSpace::AddrSpace (OpenFile * executable)
       #ifdef CHANGED
       bitmapThreadStack = new BitMap((int)(UserStackSize/(PagePerThread*PageSize)));
       bitmapThreadStack->Mark(0);
+      lockEndMain = new Semaphore("lock at the end",0);
       #endif //CHANGED
 
 }
@@ -140,6 +143,7 @@ AddrSpace::~AddrSpace ()
 
   #ifdef CHANGED
    delete bitmapThreadStack;
+   delete lockEndMain;
   #endif //CHANGED
   // End of modification
 }
@@ -177,13 +181,6 @@ AddrSpace::InitRegisters ()
 	   numPages * PageSize - 16);
 }
 
-//----------------------------------------------------------------------
-// AddrSpace::SaveState
-//      On a context switch, save any machine state, specific
-//      to this address space, that needs saving.
-//
-//      For now, nothing!
-//----------------------------------------------------------------------
 
 #ifdef CHANGED
 int AddrSpace::BeginPointStack(){
@@ -198,7 +195,26 @@ void AddrSpace::DealloateMapStack(){
   bitmapThreadStack->Clear(currentThread->GetIdThread());
 }
 
+void AddrSpace::LockEndMain(){
+  lockEndMain->P();
+}
+
+void AddrSpace::FreeEndMain(){
+  lockEndMain->V();
+}
+
+int AddrSpace::NbreThread(){
+  return bitmapThreadStack->NbBitAt1();
+}
 #endif //CHANGED
+
+//----------------------------------------------------------------------
+// AddrSpace::SaveState
+//      On a context switch, save any machine state, specific
+//      to this address space, that needs saving.
+//
+//      For now, nothing!
+//----------------------------------------------------------------------
 
 void
 AddrSpace::SaveState ()

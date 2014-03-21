@@ -110,6 +110,20 @@ BitMap::Find ()
     return -1;
 }
 
+#ifdef CHANGED
+//renvoi le nbre de bit à 1;
+int BitMap::NbBitAt1(){
+    int i = 0;
+    int cptBit = 0;
+    while(i<numBits){
+        if(Test(i))
+            cptBit++;
+        i++;
+    }
+    return cptBit;
+}
+#endif //CHANGED
+
 //----------------------------------------------------------------------
 // BitMap::NumClear
 //      Return the number of clear bits in the bitmap.
