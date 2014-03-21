@@ -20,10 +20,10 @@
   #include "bitmap.h"
 #endif //CHANGED
 
-#define UserStackSize		2048	// increase this as necessary!
+#define UserStackSize		1024	// increase this as necessary!
 
 #ifdef CHANGED
- #define PagePerThread 3
+ #define PagePerThread 2
 #endif //CHANGED
 
 class AddrSpace
@@ -38,10 +38,7 @@ class AddrSpace
     // before jumping to user code
     #ifdef CHANGED
    int BeginPointStack();
-
-   int GetActiveThread();
-   void incActiveThread();
-   void decActiveThread();
+   void DealloateMapStack();
     #endif //CHANGED
 
     void SaveState ();		// Save/restore address space-specific
@@ -54,7 +51,6 @@ class AddrSpace
 
     #ifdef CHANGED
     BitMap* bitmapThreadStack;
-    int activeThread;
     #endif //CHANGED
     // address space
 };

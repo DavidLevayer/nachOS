@@ -45,6 +45,10 @@ Thread::Thread (const char *threadName)
     // user threads.
     for (int r=NumGPRegs; r<NumTotalRegs; r++)
       userRegisters[r] = 0;
+
+    #ifdef CHANGED
+      idThread = 0;
+    #endif //CHANGED
 #endif
 }
 
@@ -407,6 +411,15 @@ Thread::RestoreUserState ()
 {
     for (int i = 0; i < NumTotalRegs; i++)
 	machine->WriteRegister (i, userRegisters[i]);
+}
+#endif
+
+#ifdef CHANGED
+int Thread::GetIdThread(){
+  return idThread;
+}
+void Thread::SetIdThread(int id){
+  idThread = id;
 }
 #endif
 

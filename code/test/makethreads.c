@@ -27,6 +27,9 @@ int main () {
     // Second Thread
 	f = afficheString;
     res = UserThreadCreate(f,"coucou cousin");
+
+    f = affiche;
+    res = UserThreadCreate(f,&i);
     /* not reached */
     return res;
 }

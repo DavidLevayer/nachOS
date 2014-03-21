@@ -34,9 +34,12 @@ static void StartUserThread(int f){
 	machine->WriteRegister(NextPCReg,restor->function+4);
 	//initialisation du pointeur de pile
 	// TODO
+<<<<<<< HEAD
 
 	//int b = currentThread->space->BeginPointStack();
 	//machine->WriteRegister(StackReg,b);
+=======
+>>>>>>> 94f8c7d88ae9c32bd63007ad3886183a5d7dbc2e
 	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
 	machine->Run();
 }
@@ -44,7 +47,7 @@ static void StartUserThread(int f){
 int do_UserThreadCreate(int f, int arg)
 {
 	Thread* newThread = new Thread("threadUser"); // sur l'appel system UserthreadCreat on crée un nouveau thread.
-	currentThread->space->incActiveThread();
+
 	if(newThread == NULL) {
 		DEBUG('t',"error in do_UserThreadCreate: thread null");
 		return -1;
@@ -68,7 +71,7 @@ void do_UserThreadExit()
 	//delete currentThread->space;
 	waitThread->V();
 	//fin du thread
-	currentThread->space->decActiveThread();
+	currentThread->space->DealloateMapStack();
 	currentThread->Finish ();
 	//delete currentThread; // pas sûr que ce soit la meilleure des choses à faire
 }
