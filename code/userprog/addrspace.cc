@@ -188,6 +188,7 @@ AddrSpace::InitRegisters ()
 #ifdef CHANGED
 int AddrSpace::BeginPointStack(){
     int find = bitmapThreadStack->Find();
+    printf("find=%d\n",find);
     ASSERT(find != -1 );
     return numPages*PageSize - find*PagePerThread*PageSize;
 }
