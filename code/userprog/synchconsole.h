@@ -4,6 +4,9 @@
 #include "copyright.h"
 #include "utility.h"
 #include "console.h"
+#include "system.h"
+#include "synch.h"
+
 class SynchConsole {
 	public:
 	SynchConsole(char *readFile, char *writeFile);
@@ -25,6 +28,10 @@ class SynchConsole {
 	// Unix fgets(3S)
 	private:
 	Console *console;
+	Semaphore *writeChar;
+	Semaphore *readChar;
+    Semaphore *writeString;
+    Semaphore *readString;
 	
 };
 #endif // SYNCHCONSOLE_H

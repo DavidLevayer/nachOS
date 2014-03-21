@@ -35,7 +35,9 @@ static void StartUserThread(int f){
 	//initialisation du pointeur de pile
 	// TODO
 	machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
+	currentThread->Yield(); // afin qu'il ne garde pas la main jusqu'à sa fin de vie on lui fait rendre la main également
 	machine->Run();
+
 }
 
 int do_UserThreadCreate(int f, int arg)
@@ -54,7 +56,9 @@ int do_UserThreadCreate(int f, int arg)
 	// le fork positionne automatiquement space à la même adresse que le processus père
 
 	newThread->Fork(StartUserThread,(int)save);
-	waitThread->P();
+
+	currentThread->Yield(); // le main rend la main à l'ordonnanceur pour permettre au nouveau thread de s'exécuter
+	//waitThread->P();
 	return 0;
 }
 
@@ -63,7 +67,7 @@ void do_UserThreadExit()
 {	
 	//suppression de l'espace d'adressage du thread
 	//delete currentThread->space;
-	waitThread->V();
+	//waitThread->V();
 	//fin du thread
 	currentThread->space->DealloateMapStack();
 	currentThread->Finish ();
