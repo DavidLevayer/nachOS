@@ -88,7 +88,7 @@ ExceptionHandler (ExceptionType which)
         switch(type){
           case SC_Halt:{
             DEBUG('a', "Shutdown, initiated by user program.\n");
-            while(currentThread->space->NbreThread()>1)
+            while(currentThread->space->NbreThread()>1) // tant qu'il y a plus que un thread on reste bloquer
               currentThread->space->LockEndMain();
             
             interrupt->Halt();
@@ -153,6 +153,11 @@ ExceptionHandler (ExceptionType which)
           }
           case SC_UserThreadExit:{
             do_UserThreadExit();
+            break;
+          }
+          case SC_UserThreadJoin:{
+            int idThread = machine->ReadRegister(4);
+            do_UserThreadJoin(idThread);
             break;
           }
           default :{

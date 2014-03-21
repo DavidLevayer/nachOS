@@ -123,9 +123,15 @@ AddrSpace::AddrSpace (OpenFile * executable)
       }
 
       #ifdef CHANGED
-      bitmapThreadStack = new BitMap((int)(UserStackSize/(PagePerThread*PageSize)));
+      int lengthBitMap = (int)(UserStackSize/(PagePerThread*PageSize));
+      int j;
+      bitmapThreadStack = new BitMap(lengthBitMap);
       bitmapThreadStack->Mark(0);
       lockEndMain = new Semaphore("lock at the end",0);
+
+      for(j = 0; j<lengthBitMap; j++){
+        waitOtherThread[j] = new Semaphore("wait executing other thread",0);
+      }
       #endif //CHANGED
 
 }
@@ -144,6 +150,7 @@ AddrSpace::~AddrSpace ()
   #ifdef CHANGED
    delete bitmapThreadStack;
    delete lockEndMain;
+   delete [] waitOtherThread;
   #endif //CHANGED
   // End of modification
 }
@@ -201,6 +208,14 @@ void AddrSpace::LockEndMain(){
 
 void AddrSpace::FreeEndMain(){
   lockEndMain->V();
+}
+
+void AddrSpace::LockIdThread(int id){
+  waitOtherThread[id]->P();
+}
+
+void AddrSpace::FreeIdThread(int id){
+  waitOtherThread[id]->V();
 }
 
 int AddrSpace::NbreThread(){
