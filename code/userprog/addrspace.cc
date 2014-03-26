@@ -22,6 +22,9 @@
 #include <strings.h>		/* for bzero */
 #ifdef CHANGED
 #include "synch.h"
+
+static void ReadAtVirtual( OpenFile *executable, int virtualaddr,
+    int numBytes, int position, TranslationEntry *pT, unsigned numPages);
 #endif //CHANGED
 
 //----------------------------------------------------------------------
@@ -68,6 +71,7 @@ AddrSpace::AddrSpace (OpenFile * executable)
     unsigned int i, size;
 
     executable->ReadAt ((char *) &noffH, sizeof (noffH), 0);
+
     if ((noffH.noffMagic != NOFFMAGIC) &&
 	(WordToHost (noffH.noffMagic) == NOFFMAGIC))
 	SwapHeader (&noffH);
@@ -109,17 +113,26 @@ AddrSpace::AddrSpace (OpenFile * executable)
       {
 	  DEBUG ('a', "Initializing code segment, at 0x%x, size %d\n",
 		 noffH.code.virtualAddr, noffH.code.size);
-	  executable->ReadAt (&(machine->mainMemory[noffH.code.virtualAddr]),
-			      noffH.code.size, noffH.code.inFileAddr);
+	  //executable->ReadAt (&(machine->mainMemory[noffH.code.virtualAddr]),
+		//	      noffH.code.size, noffH.code.inFileAddr);
+    #ifdef CHANGED
+    ReadAtVirtual(executable, noffH.code.virtualAddr,
+      noffH.code.size, noffH.code.inFileAddr, pageTable, numPages);
+    #endif
       }
+
     if (noffH.initData.size > 0)
       {
 	  DEBUG ('a', "Initializing data segment, at 0x%x, size %d\n",
 		 noffH.initData.virtualAddr, noffH.initData.size);
-	  executable->ReadAt (&
-			      (machine->mainMemory
-			       [noffH.initData.virtualAddr]),
-			      noffH.initData.size, noffH.initData.inFileAddr);
+	  //executable->ReadAt (&
+		//	      (machine->mainMemory
+		//	       [noffH.initData.virtualAddr]),
+		//	      noffH.initData.size, noffH.initData.inFileAddr);
+    #ifdef CHANGED
+    ReadAtVirtual(executable, noffH.initData.virtualAddr,
+      noffH.initData.size, noffH.initData.inFileAddr, pageTable, numPages);
+    #endif
       }
 
       #ifdef CHANGED
@@ -235,3 +248,46 @@ AddrSpace::RestoreState ()
     machine->pageTable = pageTable;
     machine->pageTableSize = numPages;
 }
+
+#ifdef CHANGED
+static void ReadAtVirtual( OpenFile *executable, int virtualaddr,
+int numBytes, int position, TranslationEntry *pT, unsigned numPages) {
+
+  // On appelle ReadAt et on stocke le résultat (données lues) dans un buffer local
+  char buffer[numBytes];
+  int size = executable->ReadAt(buffer, numBytes, position);
+
+  ASSERT(numBytes==size);
+  ASSERT((unsigned)virtualaddr+size < numPages*PageSize);
+  // On recopie le buffer dans la mémoire virtuelle
+
+  // On sauvegarde la table des pages avant d'appeller WriteMem
+  TranslationEntry *oldPageTable = machine->pageTable;
+  unsigned oldNumPages = machine->pageTableSize;
+  machine->pageTable = pT; 
+  machine->pageTableSize = numPages;
+
+  // On écrit dans la mémoire virtuelle via WriteMem
+  int i;
+  for(i=0;i<size;i++) {
+    machine->WriteMem(virtualaddr+i, 1, *(buffer+i));
+  }
+
+  // On restore l'ancienne table des pages
+  machine->pageTable = oldPageTable;
+  machine->pageTableSize = oldNumPages;
+}
+
+TranslationEntry*
+AddrSpace::getPageTable()
+{
+  return pageTable;
+}
+
+void
+AddrSpace::setPageTable(TranslationEntry *t)
+{
+  pageTable = t;
+}
+
+#endif

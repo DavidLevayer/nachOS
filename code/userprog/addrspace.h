@@ -41,6 +41,9 @@ class AddrSpace
    void LockEndMain();
    void FreeEndMain();
    int NbreThread();
+
+   TranslationEntry* getPageTable();
+   void setPageTable(TranslationEntry *t);
     #endif //CHANGED
 
     void SaveState ();		// Save/restore address space-specific
