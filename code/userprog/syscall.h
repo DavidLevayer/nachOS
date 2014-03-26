@@ -31,15 +31,19 @@
 #define SC_Yield	10
 
 #ifdef CHANGED
+ // partie II : gestion de la console
  #define SC_PutChar 11
  #define SC_SynchPutString 12
  #define SC_SynchGetChar 13
  #define SC_SynchGetString 14
  #define SC_SynchPutInt 15
  #define SC_SynchGetInt 16
+ // Partie III : gestion du multithreading
  #define SC_UserThreadCreate 17
  #define SC_UserThreadExit 18
  #define SC_UserThreadJoin 19
+ //partie IV : pagination
+ #define SC_ForkExec 20
 #endif //CHANGED
 
 #ifdef IN_USER_MODE
@@ -151,6 +155,8 @@ void SynchGetInt( int *n);
 int UserThreadCreate(void f(void *arg), void *arg);
 void UserThreadExit();
 void UserThreadJoin(int idThread);
+
+int ForkExec( char *s);
 #endif // CHANGED
 
 #endif // IN_USER_MODE

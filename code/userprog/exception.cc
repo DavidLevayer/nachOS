@@ -160,6 +160,9 @@ ExceptionHandler (ExceptionType which)
             do_UserThreadJoin(idThread);
             break;
           }
+          case SC_ForkExec:{
+            break;
+          }
           default :{
             printf("Unexpected user mode exception %d %d\n", which, type);
             ASSERT(FALSE);

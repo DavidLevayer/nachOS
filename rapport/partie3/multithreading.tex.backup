@@ -1,0 +1,152 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc} %pour utiliser tous les caracteres du clavier 
+\usepackage[T1]{fontenc} %meme chose ici
+\usepackage[francais]{babel} %pour ecrire en francais
+\usepackage{listings} %pour citer du code
+
+\usepackage{amsfonts} % pour utiliser les symboles de ensembles (reel...autre)
+\usepackage{amsmath} %debut des package pour utiliser les formules de math
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage[top=2cm, bottom=2cm, left=2.0cm, right=1.9cm]{geometry}
+
+\usepackage{wrapfig}
+\usepackage{graphicx} %pour charger des images
+\usepackage[dvipsnames]{xcolor}
+\usepackage{float}
+
+\usepackage{textcomp}
+\usepackage{url} % pour les url
+
+ \usepackage{listings} % pour ajouter du code
+ 
+\lstset{
+language=C++,
+basicstyle=\normalsize, % ou ça==> basicstyle=\scriptsize,
+upquote=true,
+aboveskip={1.5\baselineskip},
+columns=fullflexible,
+showstringspaces=false,
+extendedchars=true,
+breaklines=true,
+showtabs=false,
+showspaces=false,
+showstringspaces=false,
+identifierstyle=\ttfamily,
+keywordstyle=\color[rgb]{0,0,1},
+commentstyle=\color[rgb]{0.133,0.545,0.133},
+stringstyle=\color[rgb]{0.627,0.126,0.941},
+}
+
+\title{NachOS : Multithreading \\ Année 2013-2014}
+\author{par Jerôme Barbier, Augustin Husson et David Levayer}
+\date{\today}
+
+\begin{document}
+  \maketitle
+
+  \begin{center}
+    \includegraphics[width=10cm,height=10cm]{robottrading.jpg}\\
+    Rapport généré avec \LaTeX
+  \end{center}
+  \tableofcontents
+  \newpage
+  \section{Mise en place des threads utilisateurs}
+  On va tâcher de permettre à l'utilisateur de créer des threads. Pour cela on met en place les appels systèmes suivants:
+  \begin{itemize}
+   \item int UserThreadCreate(void f(void *arg), void *arg) : cette fonction permettra de créer un thread et d'exécuter la fonction f dans ce thread
+   Retourne -1 en cas d'erreur de création de thread.
+   \item void UserThreadExit() : Cette procédure permettra de détruire le thread qu'on a créé précédement
+  \end{itemize}
+  
+  ~~\\
+  
+  A l'appel système UserThreadCreate, on récupère classiquement les paramètres dans les registres 4 et 5, on appel ensuite la fonction \emph{do\_UserThreadCreate}.
+  Cette fonction est disponible dans \emph{userthread.cc}. On va maintenant expliciter ce que contient ce fichier. 
+  \subsection{Fichier userthread.cc}
+    Dans cette partie ce fichier comporte 3 fonctions: 
+    \begin{itemize}
+     \item extern int do\_UserThreadCreate(int f, int arg) : cette fonction est appelée par l'appel système \emph{UserThreadCreate}
+     \item static void StartUserThread(int f) : cette procédure est appelée par la fonction mère do\_UserThreadCreate
+     \item void do\_UserThreadExit() cette procédure est appelée par l'appel système \emph{UserThreadExit}
+    \end{itemize}
+    
+    \subsubsection*{do\_UserThreadCreate}
+      Comme on l'a dit, cette fonction est appelée après un appel système. Dans un premier temps, elle va créer un thread :
+	\begin{lstlisting}
+	 Thread* newThread = new Thread("threadUser");
+	\end{lstlisting}
+     Afin de pouvoir lui allouer le même espace d'adressage que le processus père, il va falloir faire un fork du programme principal.
+     Le problème est que la méthode \emph{Fork} de la classe \emph{Thread}, ne permet pas de passer en paramètre les arguments de la fonction f.
+     (On rappel que f est la fonction que souhaite exécuter l'utilisateur dans un thread). C'est pourquoi on met en place la structure suivante:
+     \begin{lstlisting}
+      struct Serialisation{
+	int function; // adresse du pointeur de fonction
+	int arg; // adresse du pointeur des arguments
+      };
+     \end{lstlisting}
+    Cette structure est mise dans le fichier \emph{userthread.cc} afin qu'elle reste locale au thread utilisateur.\\
+
+    On crée donc cette structure et on l'initialise avec l'adresse de la fonction \emph{f}, et avec l'adresse des arguments \emph{arg}.
+    \begin{lstlisting}
+     Serialisation* save = new Serialisation;
+     save->function = f;
+     save->arg = arg;
+    \end{lstlisting}
+    On finit par faire l'appel à la méthode \emph{Fork}
+    \begin{lstlisting}
+     newThread->Fork(StartUserThread,(int)save);
+    \end{lstlisting}
+    Le fork fait un appel à la procédure StartUserThread. On va donc maintenant parler de cette procédure
+    \newpage
+    \subsubsection*{StartUserThread}
+      Cette procédure permet d'initialiser correctement le thread qu'on a créé dans la fonction précédente. C'est à dire entre autre lui allouer une pile différente de
+      celle du processus père.
+      
+      Dans un premier temps, on s'attache à récupérer notre fonction \emph{f} et ses paramètres \emph{args}. Ce qui se fait avec la ligne ci-dessous:
+      \begin{lstlisting}
+       Serialisation* restor = (Serialisation*) f;
+      \end{lstlisting}
+      
+      On initialise ensuite les registres du thread, ce qui se fait classiquement en mettant des 0 partouts:
+      \begin{lstlisting}
+       for(int i=0;i<NumTotalRegs;i++)
+	{
+		machine->WriteRegister(i,0);
+	}
+      \end{lstlisting}
+      
+      On va maintenant positionner le pc sur l'adresse de la fonction \emph{f}. Ceci est fait afin qu'au lancement du thread, la première ligne exécutée 
+      soit celle correspondante à \emph{f}.
+      \begin{lstlisting}
+       machine->WriteRegister(PCReg,restor->function);
+      \end{lstlisting}
+      Bien évidemment pour que f s'exécute correctement, il est nécessaire de lui fournir ses paramètres qu'elle devra retrouver dans le registre 4.
+      \begin{lstlisting}
+      machine->WriteRegister(4,restor->arg);
+      \end{lstlisting}
+      
+      la machine nachOS possède un pointeur \emph{pcNext} qui est placé à l'instruction qui suit celle pointée par \emph{pc}. La prochaine instruction 
+      se trouve classiquement 4 octets après pc. D'où:
+      \begin{lstlisting}
+      machine->WriteRegister(NextPCReg,restor->function+4);
+      \end{lstlisting}
+      
+      Il reste maintenant à positionner le pointeur de pile : 
+      \begin{lstlisting}
+      machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
+      \end{lstlisting}
+      Bien évidemment on expliquera par la suite (i.e dans le fichier \emp{addrspace.cc}) comment fonctionne la méthode \emph{BeginPointStack}
+      
+      Maintenant que tous les registres ont été correctement initialisés, il est temps de lancer le programme!!
+      \begin{lstlisting}
+       machine->Run();
+      \end{lstlisting}
+  
+ \subsection{Fichier addrspace.cc}
+  Afin de positionner le pointeur de pile du nouveau thread, il a fallu modifier le fichier \emph{addrspace.cc et addrspace.h} qui permettent de gérer 
+  l'espace mémoir des threads/processus. La principal modification est l'ajout d'un attribut de type \emph{BitMap}
+  
+  \subsubsection*{L'attribut BitMap}
+    Une bitMap est une tableau de bit. Cela permet
+\end{document}
