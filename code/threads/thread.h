@@ -112,9 +112,11 @@ class Thread
     {
 	printf ("%s, ", name);
     }
-
+    
+    #ifdef CHANGED
     int GetIdThread();
     void SetIdThread(int id);
+    #endif //CHANGED
 
   private:
     // some of the private data for this class is listed above

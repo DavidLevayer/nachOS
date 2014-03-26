@@ -22,6 +22,7 @@ int main () {
 	int i = 999;
 	void* f = affiche;
     int res = UserThreadCreate(f,&i);
+    //UserThreadJoin(1);
     SynchPutInt(88);
 
     SynchPutString("retour au main...\n");

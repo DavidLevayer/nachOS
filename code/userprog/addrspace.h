@@ -38,8 +38,12 @@ class AddrSpace
    int BeginPointStack();
    void DealloateMapStack();
 
-   void LockEndMain();
-   void FreeEndMain();
+   void LockEndMain(); // methode qui sera appelé au moment où le main finira son execution afin de le bloquer 
+                      // s'il y a encore des threads en cours d'execution
+   void FreeEndMain(); //methode pour debloquer le semaphore bloquant le main
+   void LockIdThread(int id); // methode appelée pour bloquer le thread courant en attendant qu'un thread d'id id finisse son exécution
+   void FreeIdThread(int id); // methode appelée par le thread d'id id pour signifier qu'il a fini son execution
+
    int NbreThread();
 
    TranslationEntry* getPageTable();
@@ -57,6 +61,7 @@ class AddrSpace
     #ifdef CHANGED
     BitMap* bitmapThreadStack;
     Semaphore* lockEndMain;
+    Semaphore* waitOtherThread[(int)(UserStackSize/(PagePerThread*PageSize))];
     #endif //CHANGED
     // address space
 };

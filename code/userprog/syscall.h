@@ -39,6 +39,7 @@
  #define SC_SynchGetInt 16
  #define SC_UserThreadCreate 17
  #define SC_UserThreadExit 18
+ #define SC_UserThreadJoin 19
 #endif //CHANGED
 
 #ifdef IN_USER_MODE
@@ -149,6 +150,7 @@ void SynchGetInt( int *n);
 
 int UserThreadCreate(void f(void *arg), void *arg);
 void UserThreadExit();
+void UserThreadJoin(int idThread);
 #endif // CHANGED
 
 #endif // IN_USER_MODE

@@ -66,13 +66,17 @@ int do_UserThreadCreate(int f, int arg)
 
 void do_UserThreadExit()
 {	
-	//suppression de l'espace d'adressage du thread
-	//delete currentThread->space;
+	// on signal au main qu'on a fini l'exécution du thread
 	currentThread->space->FreeEndMain();
+	currentThread->space->FreeIdThread(currentThread->GetIdThread());
 	//fin du thread
 	currentThread->space->DealloateMapStack();
 	currentThread->Finish ();
-	//delete currentThread; // pas sûr que ce soit la meilleure des choses à faire
+}
+
+void do_UserThreadJoin(int idThread){
+	ASSERT(idThread!=0)// un thread ne doit jamais pouvoir attendre la fin du main avant de s'executer
+	currentThread->space->LockIdThread(idThread);
 }
 
 #endif // CHANGED
