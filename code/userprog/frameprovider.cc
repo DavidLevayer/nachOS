@@ -13,13 +13,10 @@ void FrameProvider::~FrameProvider(){
 }
 
 
-/*récupérer un cadre libre et initia-
-*lisé à 0 par la fonction bzero
-*/
+/*récupérer un cadre libre et initialisé à 0 par la fonction bzero*/
 FrameProvider::GetEmptyFrame(){
 
-
-    //bzero (machine->mainMemory, size);
+    bzero(machine->mainMemory, size);
 }
 
 /*libérer un cadre obtenu par GetEmptyFrame*/
