@@ -136,7 +136,7 @@ stringstyle=\color[rgb]{0.627,0.126,0.941},
       \begin{lstlisting}
       machine->WriteRegister(StackReg,currentThread->space->BeginPointStack());
       \end{lstlisting}
-      Bien évidemment on expliquera par la suite (i.e dans le fichier \emp{addrspace.cc}) comment fonctionne la méthode \emph{BeginPointStack}
+      Bien évidemment on expliquera par la suite (i.e dans le fichier \emph{addrspace.cc} comment fonctionne la méthode \emph{BeginPointStack}
       
       Maintenant que tous les registres ont été correctement initialisés, il est temps de lancer le programme!!
       \begin{lstlisting}
@@ -145,8 +145,152 @@ stringstyle=\color[rgb]{0.627,0.126,0.941},
   
  \subsection{Fichier addrspace.cc}
   Afin de positionner le pointeur de pile du nouveau thread, il a fallu modifier le fichier \emph{addrspace.cc et addrspace.h} qui permettent de gérer 
-  l'espace mémoir des threads/processus. La principal modification est l'ajout d'un attribut de type \emph{BitMap}
+  l'espace mémoir des threads/processus. La principale modification est l'ajout d'un attribut de type \emph{BitMap} ainsi que l'ajout d'une méthode :
+  \emph{BeginPointStack}
   
   \subsubsection*{L'attribut BitMap}
-    Une bitMap est un tableau de bit. Cela permet 
+    Une bitMap est un tableau de bit. Il permet d'avoir une représentation de l'état de la mémoire alouée. C'est à dire qu'à chaque création de thread,
+    on fera une demande à la bitMap afin de savoir s'il reste des pages mémoires qui peuvent être alouées au thread. Chaque bit de la bitMap correspond à
+    un certain nombre de page. Ce nombre est déterminé dans le fichier \emph{addrspace.h} par : 
+    \begin{lstlisting}
+     #define PagePerThread 2
+    \end{lstlisting}
+    \newpage
+   \subsubsection*{La méthode BeginPointStack}
+   Tout d'abord, voici le code de cette méthode:
+      \begin{lstlisting}
+    int AddrSpace::BeginPointStack(){
+      int find = bitmapThreadStack->Find();
+
+      ASSERT(find != -1 );
+      currentThread->SetIdThread(find);
+      return numPages*PageSize - find*PagePerThread*PageSize;
+    }
+      \end{lstlisting}
+   Le but de cette méthode est de déterminé l'adresse de début du pointeur de pile du nouveau thread. Il faut donc éviter que les piles des threads 
+   d'un même processus ne se chevauchent pas.
+   
+   Pour cela, on cherche dans un premier temps le 1er bit à 0 dans la bitMap qui permet donc de déterminer s'il reste de la place dans la mémoire pour un
+   nouveau thread. Pour permettre de faire la suite du sujet, on prévoit de mettre un id par thread. Par convention, on choisit de dire que l'id du thread
+   correspond à l'indice du tableau de la bitMap.
+
+   Le calcul retourné est de la pure logique.
+   
+   \section{Plusieurs threads par processus}
+      Cette section est là pour permettre de mettre en place des sémaphores afin de garentir une sécurité à l'accès de zone critique (tel que la console),
+      ou pour déterminer quand doit terminer le programme principal.
+      \subsection{Protection de la console}
+      Si plusieurs threads accèdent en même temps à la console, une erreur est générée. On doit donc mettre en place des sémaphores qui garentiront 
+      son accès.
+      
+      Pour cela il faut mettre en place 4 sémaphores dans le fichier \emph{synchconsole.cc}.Vu qu'on souhaite qu'il n'y ait qu'un thread qui est accès à la
+      console en même temps, les sémaphores sont donc initialisés à 1:
+      \begin{lstlisting}
+       	writeChar = new Semaphore("write char",1);
+	readChar = new Semaphore("read char",1);
+
+	writeString = new Semaphore("write string",1);
+	readString = new Semaphore("read string",1);
+      \end{lstlisting}
+      
+      Comme leurs noms l'indiquent, on a deux sémaphores lors de la lecture/écriture d'un caractère, et deux sémaphores pour la lecture/écriture d'un string.
+      Si on avait protégé l'accès que lors de la lecture/écriture d'un caractère, on n'aurait pas pu lire une chaîne de caractère. En effet, on aurait juste
+      récupéré des morceaux de la chaîne de caractère dans un thread, les autres morceaux auraient été dans d'autres threads.
+      
+      La protection de la lecture/écriture d'un entier est inutile vu qu'en fait les entiers sont traduits comme des chaînes de caractères qui elles sont 
+      protégées comme on l'a vu plus haut.
+      
+      \subsection{Fin du programme principal}
+      On souhaite que le programme principal s'arrête uniquement quand tous les threads secondaires ont terminés leur exécution. On va donc mettre en 
+      place un thread dans le fichier \emph{addrspace}. Ce sémaphore est mit dans ce fichier afin qu'il soit commun à tous les threads d'un même processus.
+      On veut que les threads secondaires puissent libérer le thread principal quand ils ont finis leur exécution. D'où la nécessité d'avoir un sémaphore
+      commun.
+      
+      Ce nouveau sémaphore est bien sûr initialisé à 0:
+      \begin{lstlisting}
+       lockEndMain = new Semaphore("lock at the end",0);
+      \end{lstlisting}
+      \newpage
+      On met ensuite en place deux méthodes de classe permettant de décrémenter ou d'incrémenter la ressource du sémaphore :
+      \begin{lstlisting}
+       void AddrSpace::LockEndMain(){
+	  lockEndMain->P();
+	}
+
+	void AddrSpace::FreeEndMain(){
+	  lockEndMain->V();
+	}
+      \end{lstlisting}
+      
+      Ensuite lorsque le programme principal est sur le point de faire un \emph{halt()}, il va demander à la bitMap de lui dire s'il y a plus de 1 bit à 1.
+      Si c'est le cas, alors il se bloque en attendant que tous les bits (à part le sien) soit à 0. Cette partie du code se trouve dans \emph{exception.cc}:
+      \begin{lstlisting}
+       case SC_Halt:{
+            DEBUG('a', "Shutdown, initiated by user program.\n");
+            while(currentThread->space->NbreThread()>1) // tant qu'il y a plus que un thread on reste bloquer
+              currentThread->space->LockEndMain();
+            
+            interrupt->Halt();
+            break;
+          }
+      \end{lstlisting}
+
+     Enfin lorsqu'un thread termine son exécution, c'est à dire lorsqu'il appel la procédure \emph{do\_UserThreadExit} il va mettre à 0 le bit qui lui
+     correspond dans la bitMap et libérer une ressource dans le sémaphore \emph{lockEndMain}:
+     
+     \begin{lstlisting}
+      void do_UserThreadExit(){	
+	  // on signal au main qu'on a fini l'exécution du thread
+	  currentThread->space->FreeEndMain();
+	  //fin du thread
+	  currentThread->space->DealloateMapStack();
+	  currentThread->Finish ();
+      }
+     \end{lstlisting}
+    
+    \subsection{Appel système UserThreadJoin}
+    Ici on met en place un mécanisme permettant à un thread d'utilisateur d'attendre la terminaison d'un autre thread utilisateur. On va donc de nouveau mettre
+    en place des sémaphores.
+    Pour cela, on créé un sémaphore pour chaque bit de la bitMap. Le nombre de bit correspond au nombre de thread qu'il est possible de créer. Comme pour 
+    le sémaphore permettant de déterminer si oui ou non le thread principal peut s'arrêter, on va mettre ses threads dans le fichier \emph{addrspace.cc} afin
+    qu'ils soient global à tous les threads d'un processus donné :
+    \begin{lstlisting}
+     AddrSpace::AddrSpace (OpenFile * executable)
+{
+     [...]
+      int lengthBitMap = (int)(UserStackSize/(PagePerThread*PageSize));
+      int j;
+
+      for(j = 0; j<lengthBitMap; j++){
+        waitOtherThread[j] = new Semaphore("wait executing other thread",0);
+      }
+}
+    \end{lstlisting}
+\newpage
+    On met ensuite en place deux méthodes permettant de libérer ou de prendre une ressource pour un id de thread donné :
+    \begin{lstlisting}
+  void AddrSpace::LockIdThread(int id){
+    waitOtherThread[id]->P();
+  }
+
+  void AddrSpace::FreeIdThread(int id){
+    waitOtherThread[id]->V();
+  }
+    \end{lstlisting}
+  L'appel système utilisateur \emph{UserThreadJoin} va appeler la procédure \emph(do\_UserThreadJoin) qui est dans le fichier \emph{userthread.cc} :
+  \begin{lstlisting}
+   void do_UserThreadJoin(int idThread){
+	ASSERT(idThread!=0)// un thread ne doit jamais pouvoir attendre la fin du main avant de s'executer
+	currentThread->space->LockIdThread(idThread);
+  }
+  \end{lstlisting}
+  Comme on le voit, lors de cet appel système, on attend que le thread d'id \emph{idThread} ait finit son exécution. Il peut y avoir un problème si on 
+  attend la fin d'exécution d'un thread qui n'existe pas.
+  
+  La libération de cette ressource se fait dans la procédure \emph{do\_UserThreadExit}. On rajoute cette ligne de code dans cette procédure :
+  \begin{lstlisting}
+   currentThread->space->FreeIdThread(currentThread->GetIdThread());
+  \end{lstlisting}
+  
+  La partie Bonus sera peut être faite.
 \end{document}
