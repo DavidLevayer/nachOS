@@ -26,6 +26,10 @@
 #include "translate.h"
 #include "disk.h"
 
+#ifdef CHANGED
+#include "frameprovider.h"
+#endif
+
 // Definitions related to the size, and format of user memory
 
 #define PageSize 	SectorSize 	// set the page size equal to
@@ -182,11 +186,17 @@ class Machine {
     TranslationEntry *pageTable;
     unsigned int pageTableSize;
 
+    #ifdef CHANGED
+    FrameProvider* myFrameProvider;
+    #endif
+    
   private:
     bool singleStep;		// drop back into the debugger after each
 				// simulated instruction
     int runUntilTime;		// drop back into the debugger when simulated
 				// time reaches this value
+
+    
 };
 
 extern void ExceptionHandler(ExceptionType which);
