@@ -167,7 +167,8 @@ Initialize (int argc, char **argv)
     Partie II, question 4.4, initialisation de la console asynchrone
     */
     #ifdef CHANGED
-    	synchconsole = new SynchConsole(NULL,NULL);
+        if(!format) // si le formatage du disque dur est demandée, on supprime la console pour ne pas bloquer l'exécution
+    	   synchconsole = new SynchConsole(NULL,NULL);
     #endif //CHANGED
 #endif
 
