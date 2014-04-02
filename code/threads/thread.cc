@@ -119,6 +119,35 @@ Thread::Fork (VoidFunctionPtr func, int arg)
     (void) interrupt->SetLevel (oldLevel);
 }
 
+#ifdef CHANGED
+void
+Thread::ForkExec (VoidFunctionPtr func, int arg, int addr)
+{
+    DEBUG ('t', "Forking thread \"%s\" with func = 0x%x, arg = %d\n",
+     name, (int) func, arg);
+
+    StackAllocate (func, arg);
+
+#ifdef USER_PROGRAM
+
+    // LB: The addrspace should be tramsitted here, instead of later in
+    // StartProcess, so that the pageTable can be restored at
+    // launching time. This is crucial if the thread is launched with
+    // an already running program, as in the "fork" Unix system call. 
+    
+    // LB: Observe that currentThread->space may be NULL at that time.
+  AddrSpace *a = (AddrSpace *) addr;
+    this->space = a;
+
+#endif // USER_PROGRAM
+
+    IntStatus oldLevel = interrupt->SetLevel (IntOff);
+    scheduler->ReadyToRun (this); // ReadyToRun assumes that interrupts 
+    // are disabled!
+    (void) interrupt->SetLevel (oldLevel);
+}
+#endif
+
 //----------------------------------------------------------------------
 // Thread::CheckOverflow
 //      Check a thread's stack to see if it has overrun the space

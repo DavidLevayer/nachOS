@@ -45,6 +45,7 @@
 #include "addrspace.h"
 #endif
 
+
 // CPU register state to be saved on context switch.  
 // The SPARC and MIPS only need 10 registers, but the Snake needs 18.
 // For simplicity, this is just the max over all architectures.
@@ -92,6 +93,9 @@ class Thread
     // basic thread operations
 
     void Fork (VoidFunctionPtr func, int arg);	// Make thread run (*func)(arg)
+    #ifdef CHANGED
+    void ForkExec (VoidFunctionPtr func, int arg, int addr);
+    #endif
     void Yield ();		// Relinquish the CPU if any 
     // other thread is runnable
     void Sleep ();		// Put the thread to sleep and 

@@ -27,6 +27,7 @@
 
 #ifdef CHANGED
 #include "userthread.h"
+#include "fork.h"
 #endif
 
 //----------------------------------------------------------------------
@@ -161,6 +162,11 @@ ExceptionHandler (ExceptionType which)
             break;
           }
           case SC_ForkExec:{
+            int c = machine->ReadRegister(4);
+            char* name = new char[MAX_STRING_SIZE+1];
+            synchconsole->CopyStringFromMachine(c, name, MAX_STRING_SIZE); 
+            int res = do_UserFork(name);
+            ASSERT(res==1);
             break;
           }
           default :{
