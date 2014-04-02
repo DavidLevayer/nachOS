@@ -12,7 +12,6 @@ struct Serialisation{
 
 void StartProcess(int arg){
 	Serialisation* restor = (Serialisation*) arg;
-	printf("coucou on est dans le fork\n");
 	currentThread->space = restor->space;
 	currentThread->space->InitRegisters ();	// set the initial register values
     currentThread->space->RestoreState ();	// load page table register
@@ -29,8 +28,7 @@ int do_UserFork(char *s){
 
     Serialisation* save = new Serialisation;
     save->space = space;
-    
-	printf("attention on va faire un fork\n");
+
     newThread->Fork(StartProcess,(int)save);
     machine->SetNbProcess(machine->GetNbProcess()+1);
     delete executable;
