@@ -27,6 +27,7 @@
 
 #ifdef CHANGED
 #include "userthread.h"
+#include "fork.h"
 #endif
 
 //----------------------------------------------------------------------
@@ -161,6 +162,11 @@ ExceptionHandler (ExceptionType which)
             break;
           }
           case SC_ForkExec:{
+            printf("exception forkex\n");
+            int arg = machine->ReadRegister(4);
+            char* to = new char[MAX_STRING_SIZE+1]; // buffer le +1 permet d'ajouter le caractere de fin de chaine
+            synchconsole->CopyStringFromMachine(arg, to, MAX_STRING_SIZE);
+            do_UserFork(to);
             break;
           }
           default :{
