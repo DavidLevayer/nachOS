@@ -3,6 +3,6 @@
 int main()
 {
    ForkExec("../build/userpages0");
-   //ForkExec("../test/userpages1");
+   ForkExec("../build/makethreads");
    return 0;
 }

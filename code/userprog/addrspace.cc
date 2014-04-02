@@ -163,6 +163,10 @@ AddrSpace::~AddrSpace ()
   delete [] pageTable;
 
   #ifdef CHANGED
+  unsigned int i;
+  for (i = 0; i < numPages; i++){
+    machine->myFrameProvider->ReleaseFrame(pageTable[i].physicalPage);
+  }
    delete bitmapThreadStack;
    delete lockEndMain;
    delete [] waitOtherThread;

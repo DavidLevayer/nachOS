@@ -92,6 +92,10 @@ ExceptionHandler (ExceptionType which)
             while(currentThread->space->NbreThread()>1) // tant qu'il y a plus que un thread on reste bloquer
               currentThread->space->LockEndMain();
             
+            if(machine->GetNbProcess() != 0){
+              machine->SetNbProcess(machine->GetNbProcess()-1);
+              currentThread->Finish();
+            }
             interrupt->Halt();
             break;
           }

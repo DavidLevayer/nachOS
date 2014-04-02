@@ -36,7 +36,7 @@
 					// the disk sector size, for
 					// simplicity
 
-#define NumPhysPages    32
+#define NumPhysPages    128
 #define MemorySize 	(NumPhysPages * PageSize)
 #define TLBSize		4		// if there is a TLB, make it small
 
@@ -149,6 +149,10 @@ class Machine {
 
     void Debugger();		// invoke the user program debugger
     void DumpState();		// print the user CPU and memory state 
+    #ifdef CHANGED
+    int GetNbProcess();
+    void SetNbProcess(int nb);
+    #endif
 
 
 // Data structures -- all of these are accessible to Nachos kernel code.
@@ -195,6 +199,9 @@ class Machine {
 				// simulated instruction
     int runUntilTime;		// drop back into the debugger when simulated
 				// time reaches this value
+    #ifdef CHANGED
+        int nbProcess;
+    #endif
 
     
 };

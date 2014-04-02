@@ -62,6 +62,7 @@ Machine::Machine(bool debug)
 
 #ifdef CHANGED
     myFrameProvider = new FrameProvider((int)(MemorySize/PageSize));
+    nbProcess =0;
 #endif
 
     for (i = 0; i < MemorySize; i++)
@@ -90,6 +91,10 @@ Machine::~Machine()
     delete [] mainMemory;
     if (tlb != NULL)
         delete [] tlb;
+
+    #ifdef CHANGED
+        delete myFrameProvider;
+    #endif
 }
 
 //----------------------------------------------------------------------
@@ -222,4 +227,14 @@ void Machine::WriteRegister(int num, int value)
 	// DEBUG('m', "WriteRegister %d, value %d\n", num, value);
 	registers[num] = value;
     }
+
+#ifdef CHANGED
+int Machine::GetNbProcess(){
+    return nbProcess;
+}
+
+void Machine::SetNbProcess(int nb){
+    nbProcess = nb;
+}
+#endif
 
