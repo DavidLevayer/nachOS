@@ -1,0 +1,235 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc} %pour utiliser tous les caracteres du clavier 
+\usepackage[T1]{fontenc} %meme chose ici
+\usepackage[francais]{babel} %pour ecrire en francais
+\usepackage{listings} %pour citer du code
+
+\usepackage{amsfonts} % pour utiliser les symboles de ensembles (reel...autre)
+\usepackage{amsmath} %debut des package pour utiliser les formules de math
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage[top=2cm, bottom=2cm, left=2.0cm, right=1.9cm]{geometry}
+
+\usepackage{wrapfig}
+\usepackage{graphicx} %pour charger des images
+\usepackage[dvipsnames]{xcolor}
+\usepackage{float}
+
+\usepackage{textcomp}
+\usepackage{url} % pour les url
+
+ \usepackage{listings} % pour ajouter du code
+ 
+\lstset{
+language=C++,
+basicstyle=\normalsize, % ou ça==> basicstyle=\scriptsize,
+upquote=true,
+aboveskip={1.5\baselineskip},
+columns=fullflexible,
+showstringspaces=false,
+extendedchars=true,
+breaklines=true,
+showtabs=false,
+showspaces=false,
+showstringspaces=false,
+identifierstyle=\ttfamily,
+keywordstyle=\color[rgb]{0,0,1},
+commentstyle=\color[rgb]{0.133,0.545,0.133},
+stringstyle=\color[rgb]{0.627,0.126,0.941},
+}
+
+\title{NachOS : La pagination \\ Année 2013-2014}
+\author{par Jerôme Barbier, Augustin Husson et David Levayer}
+\date{\today}
+
+\begin{document}
+   \maketitle
+
+  \begin{center}
+    \includegraphics[width=10cm,height=10cm]{../partie3/robottrading.jpg}\\
+    Rapport généré avec \LaTeX
+  \end{center}
+  \tableofcontents
+  \newpage
+  
+  \textcolor{Violet}{\section{Adressage virtuelle par une table des pages}}
+  \textcolor{Violet}{\section{Exécuter plusieurs programmes en même temps}}
+  On met en place de manière classique l'appel système: 
+  \begin{lstlisting}
+  int ForkExec( char *s)
+  \end{lstlisting}
+  Pour rappel, on met en place un appel système en faisant les étapes suivantes :
+  \begin{itemize}
+   \item[1.] Dans \emph{syscall.h}, on écrit le prototype de notre appel système et on ajoute également une constante suivant le principe de nommage suivant:
+   \begin{center}
+   \emph{SC\_+nom\_de\_l'appel\_system}
+   \end{center}
+  Dans le cas présent on a rajouté ceci : 
+  \begin{lstlisting}
+   #define SC_ForkExec 20
+   [...]
+   int ForkExec( char *s);
+  \end{lstlisting}
+  \item[2.] On complète ensuite le fichier \emph{Start.s} qui implémente le fichier \emph{syscall.h} en assembleur. Ce qui donne ici :
+  \begin{lstlisting}
+   	.globl ForkExec
+	.ent ForkExec
+
+ForkExec: // nom de l'appel système
+	addiu $2,$0,SC_ForkExec // ajout dans le registre 2 la valeur correspondant à l'appel sytème
+	syscall // appel système
+	j     $31
+	.end ForkExec
+  \end{lstlisting}
+  \item[3.] Puis on s'efforce de complèter le fichier \emph{exception.cc} qui permet de gérer l'aiguillage vers les différents appels systèmes mise en place 
+  tout au long du projet. Les différents cas étant gérer dans un switch, il suffit donc de rajouter notre ``cas'' comme ceci :
+  \begin{lstlisting}
+   case SC_ForkExec:{
+     break;
+   }
+  \end{lstlisting}
+  Bien entendu on tâchera de complèter ce cas là afin de répondre aux exigences du cahier des charges. On expliquera par la suite ce qu'il faut ajouter ici.
+  
+  \item[4.] Enfin il est nécessaire de créer un fichier de test qui permettra de tester cet appel sytème. On pensera à compiler à cet instant afin de bien 
+  vérifier qu'aucun oublie dans ces étapes n'a été fait avant de complèter le code de \emph{exception.cc}
+  \end{itemize}  
+    \textcolor{NavyBlue}{\subsection{Un processus : un thread de plus haut niveau}}
+    Comme l'indique le sujet de la sous-section, on va créer un processus en suivant le même procéder que lorsqu'on a créé des threads dans la partie III.
+    On commence donc par créer deux fichiers : \emph{fork.cc} et \emph{fork.h}. Le second fichier ne présente guère de difficulter. Il contient simplement
+    les signatures des fonctions qu'on a besoin. En l'occurance, nous avons besoin que d'une seule fonction publique :
+    \begin{lstlisting}
+     int do_UserFork(char * s);
+    \end{lstlisting}
+    Et maintenant voici le code que contient le fichier \emph{fork.cc}. On va bien sûr ajouter quelques explications en plus des commentaires du code qui 
+    y sont déjà.
+    
+    \newpage
+    \textcolor{TealBlue}{\subsubsection*{Le fichier fork.cc}}
+    \begin{lstlisting}
+#ifdef CHANGED
+#include "fork.h"
+#include "thread.h"
+#include "addrspace.h"
+#include "synch.h"
+#include "system.h"
+#include "console.h"
+
+struct Serialisation{
+	AddrSpace* space;
+};
+
+void StartProcess(int arg){
+	Serialisation* restor = (Serialisation*) arg; // on restaure notre sérialisation 
+	currentThread->space = restor->space; // on affecte le nouvel espace mémoir à notre nouveau processus
+	currentThread->space->InitRegisters ();	// on réinitialise les registres
+	currentThread->space->RestoreState ();	// on charge la table des pages des registres
+
+	machine->Run ();		// on lance le processus
+}
+
+int do_UserFork(char *s){
+
+	OpenFile *executable = fileSystem->Open (s);
+	AddrSpace *space = new AddrSpace(executable); // création du nouvel espace mémoir du processus que l'on va mettre en place
+
+	Thread* newThread = new Thread("newProcess"); // un processus est juste un thread avec un nouvel espace mémoir
+  
+	Serialisation* save = new Serialisation; // comme pour les threads, on sérialise l'espace mémoir qu'on souhaite affecter à notre processus
+	save->space = space;
+
+	newThread->Fork(StartProcess,(int)save); // on fork le processus père
+	machine->SetNbProcess(machine->GetNbProcess()+1); // on incrémente de 1 le nbre de processus créé
+	delete executable;
+	currentThread->Yield(); // le processus père est mis en attente
+	return 0;
+}
+
+#endif 
+
+    \end{lstlisting}
+    \newpage
+  \textcolor{TealBlue}{\subsubsection*{Les explications}}
+    Tout d'abord, il faut savoir que pour réaliser cette implémentation, il y avait deux solutions qui résident dans le fait d'utiliser ou non la méthode
+    native \emph{Fork} de la classe \emph{Thread}. On rappel que la méthode Fork est destinée à créer un thread fils d'un processus père et non pas à 
+    créer un autre processus père. 
+    
+    Ainsi, détourner l'objectif premier de cette méthode peut peut-être rebiffer les puristes. Afin de satisfaire les puritains et de montrer qu'il y avait plusieurs
+    solutions possibles, deux implémentations différentes sont mises en place. 
+    
+    \begin{itemize}
+     \item La première ne modifie pas la classe \emph{Thread} et utilise les méthodes
+    déjà en place. Ce qui permet donc de ne pas rajouter du code supplémentaire dans les classes du système. Cependant pour contourner les restrictions
+    de la méthode \emph{Fork}, une sérialisation a été mise en place. Elle permet de sauvegarder le nouvel espace mémoir qu'on souhaite alloué au 
+    processus créé.
+    
+    \item La seconde méthode consiste à faire une surcharge de la méthode \emph{Fork} en ajoutant comme paramêtre l'espace mémoir que le nouveau processus
+    doit occuper. Ensuite cette nouvelle méthode fait exactement la même chose que son original au détail près relatif à la mémoire allouée.
+    \end{itemize}
+  Dans le code ci-dessus, c'est la première méthode qui a été mise en place pour faire fonctionner l'appel système. Notez bien que ce choix est totalement 
+  arbitraire. 
+  Par ailleurs, si on souhaitait mettre en place la deuxième méthode, il suffirait de remplacer la ligne : 
+  \begin{lstlisting}
+   newThread->Fork(StartProcess,(int)save);
+  \end{lstlisting}
+  par : 
+  \begin{lstlisting}
+   newThread->ForkExec(StartProcess,NULL,(int)space);
+  \end{lstlisting}
+  Et bien entendu dans la procédure \emph{StartProcess}, il faudra commenter les deux premières lignes qui ne sont plus utiles pour la $2^{eme}$ solution.
+  
+  On remarquera que le $3^{eme}$ argument de la méthode \emph{ForkExec} est de type \emph{int} et pas de type \emph{AddrSpace*}. Cette spécificité est une 
+  astuce pour éviter des appels réccursifs à la bibliothèque \emph{addrspace.h} dans la classe \emph{Thread}.
+  
+  \textcolor{TealBlue}{\subsubsection*{La completion du fichier execption.cc}}
+  Maintenant que tout est en place pour faire enfin notre appel système, il est grand temps de faire le pont entre l'utilisateur et le système et donc
+  de complêter le fichier \emph{exception.cc}. Sans plus attendre voici ce qui est rajouté : 
+  \begin{lstlisting}
+          case SC_ForkExec:{
+            int arg = machine->ReadRegister(4);
+            char* to = new char[MAX_STRING_SIZE+1]; // buffer le +1 permet d'ajouter le caractere de fin de chaine
+            synchconsole->CopyStringFromMachine(arg, to, MAX_STRING_SIZE);
+            int res = do_UserFork(to);
+
+            ASSERT(res==0);
+            break;
+          }   
+  \end{lstlisting}
+  Donc classiquement on retrouve les arguments de l'appel système dans le registre 4. Et comme toujours, on a juste l'adresse de l'argument qui est donc
+  de type int. Hors, on sait que l'argument est une chaîne de caractère. Il faut donc refaire la même procédure que pour l'appel 
+  système \emph{SynchPutString}. Et c'est donc ce qui est fait là avec la variable\emph{char* to} et l'appel à la méthode \emph{CopyStringFromMachine}.
+  
+  \newpage
+  \textcolor{NavyBlue}{\subsection{Main!! Ne vas pas trop vite}}
+  Après avoir testé ce nouvel appel système, on se rend rapidement compte que le nouveau processus a à peine le temps de s'executer que la machine nachOS
+  est arrêté. Il faut donc pouvoir empêcher que l'appel à la méthode \emph{Halt} qui met stoppe nachOS de s'exécuter tant que tous les processus n'ont pas
+  fini leur exécution.
+  
+  Dans ce but, on met en place un compteur de processus qui se fait donc dans la classe \emph{machine}. Ce compteur est l'attribut \emph{nbProcess}. Cet
+  attribut étant privé, un getter et setter (\emph{GetNbProcess} et \emph{SetNbProcess}) sont mis en place pour le modifier.
+  
+  De cette façon à chaque création d'un processus (i.e à chaque appel système \emph{ForkExec}) on incrémente ce compteur de 1. Et lorsqu'un processus est 
+  sur le point de s'arrêter : 
+  \begin{itemize}
+   \item On teste tout d'abord combien il y a de processus en cours d'exécution. Le compteur étant initialement mis à 0, si le compteur est supérieur 
+   strict à 0, alors y a plus de deux processus qui existent.
+   \item Dans le cas où il y a plus de deux processus, celui qui souhaite s'arrêter, décrémente alors de 1 le compteur et exécute la méthode \emph{Finish()}
+   \item Dans le cas où il y a un seul processus, on fait alors un appel à la méthode \emph{Halt}.
+  \end{itemize}
+  Bien entendu ce code se met après celui qui vérifie que tous les threads d'un processus se sont arrêtés. Et pour conclure ces explications
+  voici le code qui y correspond :
+  \begin{lstlisting}
+          case SC_Halt:{
+            DEBUG('a', "Shutdown, initiated by user program.\n");
+            while(currentThread->space->NbreThread()>1) // tant qu'il y a plus que un thread on reste bloquer
+              currentThread->space->LockEndMain();
+            
+            if(machine->GetNbProcess() > 0){
+              machine->SetNbProcess(machine->GetNbProcess()-1);
+              currentThread->Finish();
+            }
+            interrupt->Halt();
+            break;
+          }   
+  \end{lstlisting}
+
+\end{document}
