@@ -1,0 +1,530 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc} %pour utiliser tous les caracteres du clavier 
+\usepackage[T1]{fontenc} %meme chose ici
+\usepackage[francais]{babel} %pour ecrire en francais
+\usepackage{listings} %pour citer du code
+
+\usepackage{amsfonts} % pour utiliser les symboles de ensembles (reel...autre)
+\usepackage{amsmath} %debut des package pour utiliser les formules de math
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage[top=2cm, bottom=2cm, left=2.0cm, right=1.9cm]{geometry}
+
+\usepackage{wrapfig}
+\usepackage{graphicx} %pour charger des images
+\usepackage[dvipsnames]{xcolor}
+\usepackage{float}
+
+\usepackage{textcomp}
+\usepackage{url} % pour les url
+
+ \usepackage{listings} % pour ajouter du code
+ 
+\lstset{
+language=C++,
+basicstyle=\normalsize, % ou ça==> basicstyle=\scriptsize,
+upquote=true,
+aboveskip={1.5\baselineskip},
+columns=fullflexible,
+showstringspaces=false,
+extendedchars=true,
+breaklines=true,
+showtabs=false,
+showspaces=false,
+showstringspaces=false,
+identifierstyle=\ttfamily,
+keywordstyle=\color[rgb]{0,0,1},
+commentstyle=\color[rgb]{0.133,0.545,0.133},
+stringstyle=\color[rgb]{0.627,0.126,0.941},
+}
+
+\title{NachOS : Entrées / Sorties console \\ Année 2013-2014}
+\author{par Jerôme Barbier, Augustin Husson et David Levayer}
+\date{\today}
+
+\begin{document}
+    \maketitle
+
+  \begin{center}
+    \includegraphics[width=10cm,height=10cm]{../partie3/robottrading.jpg}\\
+    Rapport généré avec \LaTeX
+  \end{center}
+  \tableofcontents
+  \newpage
+  \textcolor{Violet}{\section{But}}
+  Dans cette partie, le sujet ne demande que l'ajout d'un fichier putchar.c dans le dossier Test. 
+  Le contenu de ce fichier est le suivant (il servira par la suite pour tester les entrées/sorties) :
+  \begin{lstlisting}
+#include "syscall.h"
+
+int
+main ()
+{
+    PutChar ('c');
+
+    /* not reached */
+    return 0;
+}   
+  \end{lstlisting}
+ \textcolor{Violet}{\section{consoles asynchrones}}
+ On exécute le programme ConsoleTest via la commande \emph{./nachos-userprog -c} (dans le répertoire build). 
+ La console se lance et se contente d'imprimer sur l'écran le caractère que l'on a saisi. L'appui sur le caractère \emph{'q'} ferme la console.
+ Les modifications apportées à ce programme sont les suivantes :
+ \begin{itemize}
+  \item modification du mode de terminaison de la console (fin de fichier ou appui sur \emph{Ctrl+D})
+  \item ajout de chevrons ('<' et '>') autour des caractères saisis
+  \item possibilité d'utiliser des fichiers en entrée et en sortie
+ \end{itemize}
+On modifie le fichier userprog/progtest.cc (et notamment la fonction ConsoleTest):
+\begin{lstlisting}
+void
+ConsoleTest (char *in, char *out)
+{
+    char ch;
+    console = new Console (in, out, ReadAvail, WriteDone, 0);
+    readAvail = new Semaphore ("read avail", 0);
+    writeDone = new Semaphore ("write done", 0);
+
+    for (;;)
+      {
+
+	  readAvail->P ();	// wait for character to arrive
+	  ch = console->GetChar ();
+
+      if(ch == EOF){
+        return;
+      }
+      if(ch != '\n')
+      {
+        console->PutChar ('<');
+        writeDone->P ();  // wait for write to finish
+      }
+
+	  console->PutChar (ch);	// echo it!
+      writeDone->P ();  // wait for write to finish
+
+      if(ch != '\n')
+      {
+        console->PutChar ('>');
+	   writeDone->P ();	// wait for write to finish }}}
+\end{lstlisting}
+  \textcolor{TealBlue}{\subsubsection*{Petite explication sur les ajouts effectués}}
+\begin{itemize}
+ \item on boucle pour lire les caractères
+ \item on quitte la boucle lors de la réception du caractère EOF.
+ \item lorsque l'on écrit un caractère, on écrit également les chevrons (avant et après)
+ \item on utilise deux sémaphores pour synchroniser la lecture et l'écriture 
+ (afin d'attendre l'arrivée d'un caractère à lire et d'attendre la fin de l'écriture courante).
+\end{itemize}
+\emph{La console se comporte désormais de la façon décrite par l'énoncé.}
+
+\textcolor{Violet}{\section{Entrées-sorties synchrones}}
+  Dans cette partie on met en place une surcouche qui encapsulera la console et le mécanisme des sémaphores. L'idée étant de rendre transparent l'utilisation 
+  des sémaphores.
+  
+  Pour cela, on créé la classe \emph{SynchConsole} à l'aide des fichiers \emph{synchconsole.cc} et \emph{synchconsole.h}. Pour le moment on complète ces fichiers
+  avec les éléments suivants : 
+  \begin{itemize}
+   \item On a pour seul attribut : la console qu'on mettra en privé
+   \item Le constructeur \emph{SynchConsole(char *readFile, char *writeFile)} qui prend comme paramètre un nom de fichier d'entrée et un nom de fichier de sortie.
+   Il permet d'initialiser notre console et deux sémaphores qu'on a préalablement déclaré \emph{static}
+   \item Le desctructeur \emph{~SynchConsole()} qui pour l'instant supprime simplement la console et les deux sémaphores.
+   \item La procédure \emph{SynchPutChar(const char ch)} qui permet d'écrire le caractère passé en paramètre dans la console
+   \item La fonction \emph{SynchGetChar()} qui permet de lire un caractère en entrée de la console.
+  \end{itemize}
+\textcolor{TealBlue}{\subsubsection*{Code du fichier synchconsole.cc}}
+\begin{lstlisting}
+ #ifdef CHANGED
+#include "copyright.h"
+#include "console.h"
+#include "system.h"
+#include "synch.h"
+#include "synchconsole.h"
+
+#define NBREMAXCARACTENTIER 12 //entier signé --> -2 147 483 648 à 2 147 483 647 soit 11 caractères max avec le "-"
+
+static Semaphore *readAvail;
+static Semaphore *writeDone;
+static void ReadAvail(int arg) { readAvail->V(); }
+static void WriteDone(int arg) { writeDone->V(); }
+
+SynchConsole::SynchConsole(char *readFile, char *writeFile)
+{
+	readAvail = new Semaphore("read avail", 0);
+	writeDone = new Semaphore("write done", 0);
+	console = new Console (readFile, writeFile, ReadAvail, WriteDone, 0);
+}
+SynchConsole::~SynchConsole()
+{
+	delete console;
+	delete writeDone;
+	delete readAvail;
+}
+
+
+void SynchConsole::SynchPutChar(const char ch)
+{
+	console->PutChar(ch);
+	writeDone->P();
+}
+char SynchConsole::SynchGetChar()
+{
+	readAvail->P();
+	return console->GetChar();
+}
+#endif // CHANGED
+\end{lstlisting}
+
+On modifie ensuite le fichier \emph{thread/main.cc} afin de pouvoir utiliser explicitement la nouvelle console que l'on vient d'implémenter en tapant la ligne 
+de commande \emph{./nachos-userprog -sc}
+\textcolor{TealBlue}{\subsubsection*{Modification de main.cc}}
+\begin{lstlisting}
+ #ifdef CHANGED
+	  else if (!strcmp (*argv, "-sc"))
+	    {			// test the synchronous console
+		if (argc == 1)
+		    SynchConsoleTest (NULL, NULL);
+		else
+		  {
+		      ASSERT (argc > 2);
+		      SynchConsoleTest (*(argv + 1), *(argv + 2));
+		      argCount = 3;
+		  }
+		interrupt->Halt ();
+	    }
+#endif // CHANGED
+\end{lstlisting}
+La procédure \emph{SynchConsoleTest} est une procédure qui est implémentée dans le fichier \emph{progtest.cc} qui permet d'utiliser explicitement la nouvelle
+console.
+
+\textcolor{TealBlue}{\subsubsection*{Procédure SynchConsoleTest}}
+\begin{lstlisting}
+ void
+SynchConsoleTest (char *in, char *out)
+{
+    char ch = 'c';
+    synchconsole = new SynchConsole(in, out);
+    while ((ch = synchconsole->SynchGetChar()) != EOF)
+    synchconsole->SynchPutChar(ch);
+    fprintf(stderr, "Solaris: EOF detected in SynchConsole!\n");
+    delete synchconsole;
+}
+\end{lstlisting}
+C'est une procédure assez classique pour tester la synchconsole. On créé la synchconsole grâce au constructeur. On prend une variable \emph{ch} permettant
+de récupérer les caractères tapés sur la console et également de tester si le caractère correspond au caractère EOF. On n'ajoute pas les chevrons car cela 
+ne rajoute pas grand chose au programme de test.
+
+Une fois que le programme est terminé, on supprime la synchconsole.
+\newpage
+\textcolor{Violet}{\section{Appel système PutChar}}
+  On va mettre en place pour la première fois un appel système. Il permettra de passer en mode noyau pour pouvoir afficher un caractère en mode user comme le
+  ferait la fonction \emph{printf}.
+  
+  Pour cela il y a des 4 étapes à respecter :
+  \begin{enumerate}
+   \item Tout d'abord on édite le fichier \emph{syscall.h} . On y place la signature de la procédure \emph{PutChar} (qui est donc notre appel système). 
+   On y ajoute également une constante qui permettra lorsqu'on est en mode noyau de savoir quel appel système a été demandé. Le nommage de cette constante 
+   se fait selon le principe d'écriture suivant:
+   \begin{center}
+    \emph{SC\_+nom\_de\_l'appel\_system}
+   \end{center}
+  Ainsi pour le cas présent on a rajouté les lignes suivantes : 
+  \begin{lstlisting}
+    #define SC_PutChar 11
+    [...]
+    void PutChar(char c);
+  \end{lstlisting}
+  \item Ensuite il faut implémenter la signature de la procédure précédente. Ceci est fait dans le fichier \emph{start.S} et cela donne donc :
+  \begin{lstlisting}
+	.globl PutChar
+	.ent 	PutChar
+
+PutChar:
+	addiu $2,$0,SC_PutChar /*on place la valeur de l appel systeme dans le registre r2. Pour cela on fait une addition avec le registre r0 qui contient la valeur 0*/
+	syscall
+	j	$31
+	.end PutChar   
+  \end{lstlisting}
+la ligne : \emph{syscall} permet de faire l'appel système et de passer en mode noyau. La gestion des appels systèmes est alors fait dans le fichier 
+\emph{exception.cc}. 
+
+  \item  Comme Il y aura de nombreux appels systèmes à mettre en place par la suite, on met en place switch afin de pouvoir les gérer plus facilement. 
+  On notera au passsage que le type d'exception est récupéré dans le registre deux. 
+\begin{lstlisting}
+ int type = machine->ReadRegister (2);
+ [..]
+ switch(type){
+    default :{
+      printf("Unexpected user mode exception %d %d\n", which, type);
+      ASSERT(FALSE);
+      break;
+    }
+ }
+\end{lstlisting}
+  Il ne reste plus qu'à placer notre exception :
+  \begin{lstlisting}
+          case SC_PutChar:{
+            break;
+          }   
+  \end{lstlisting}
+ Il faut ensuite complèter ce cas là. Pour cela on lit dans le registre 4 le paramètre de la fonction utilisateur \emph{PutChar}. Et enfin faire l'appel
+ à la méthode \emph{SynchPutChar} écrite dans la classe \emph{SynchConsole}. Ce qui donne au finale:
+ \newpage
+ \begin{lstlisting}
+          case SC_PutChar:{
+            int c = machine->ReadRegister(4); // registre contenant le parametre de la fonction appelée
+            DEBUG('a',"appel de la fonction SynchPutChar\n");
+            synchconsole->SynchPutChar((char)c);
+            DEBUG('a',"\nfin d'appel en mode kernel\n");
+            break;
+          }  
+ \end{lstlisting}
+  \item Enfin il mettre en place si besoin des fonctions supplémentaires permettant le bon fonctionnement de l'appel système. Dans le cas présent, la méthode
+  \emph{SynchPutChar} ayant déjà été implémentée dans la partie précédente, il n'y a pas besoin d'en rajouter.
+  \end{enumerate}
+
+  Pour finir on met en place un petit programme de test qu'on appelera \emph{putchar.c}:
+  \begin{lstlisting}
+#include "syscall.h"
+
+int
+main ()
+{
+     PutChar ('c');
+
+    /* not reached */
+    return 0;
+}   
+  \end{lstlisting}
+  Afin de pouvoir exécuter ce programme utilisateur, il faut également déclarer en global la \emph{synchconsole} dans le fichier \emph{threads/system.cc}. Il 
+  faut également l'initialiser et la détruire à la fin de l'exécution. Ce qui se fait respectivement dans les procédures \emph{Initialize} et \emph{Cleanup}.
+  
+  Cette ajout dans le fichier \emph{threads/system.cc} entraîne quelques modifications dans le fichier \emph{progtest.cc} et ce parce qu'il ne peut exister
+  plusieurs instances de la console:
+    \begin{enumerate}
+     \item Dans la procédure \emph{ConsoleTest} on doit supprimer la \emph{synchconsole} afin de pouvoir utiliser explicitement la console et d'avoir qu'une
+     seule instance de celle-ci. Quand le programme quitte il faut reconstruire la \emph{synchconsole} car elle sera de nouveau détruite dans la procédure 
+     \emph{Cleanup}. On a procédé de cette manière afin de ne pas s'embourber dans des gestions de cas de destruction/construction dans le fichier \emph{system.cc}
+     \item Dans la procédure \emph{SynchConsoleTest}, qui prend en paramètre un fichier d'entré et de sortie, on supprime la \emph{synchconsole} pour pouvoir
+     la reconstruire avec les paramètres de la procédure. On aurait pu mettre en place un getter/setter.
+    \end{enumerate}
+
+Après avoir compilé et exécuté le programme de test via la commande \emph{./nachos-userprog -x ./putchar}, une exception est levée et spécifie que le type
+\emph{SC\_EXIT} n'est pas pris en compte. C'est pourquoi on rajoute le cas \emph{SC\_EXIT}:
+\begin{lstlisting}
+           case SC_Exit:{ // cas appelé lors d'un fin de programme sans appel à la fonction Halt()
+            break;
+          }
+\end{lstlisting}
+\newpage
+  \textcolor{Violet}{\section{Des caractères aux chaînes}}
+  Maintenant qu'on a vu comment afficher un caractère, on va maintenant voir comment afficher une chaîne de caractère. 
+  \textcolor{NavyBlue}{\subsection{Passer de mips à Linux}}
+  La première chose à faire est de passer d'un pointeur mips à un pointeur Linux. Pour cela on met en place la méthode \emph{CopyStringFromMachine} que l'on place
+  dans la classe \emph{SynchConsole}. On a choisit de placer cette méthode dans cette classe car elle sera spécifiquement utiliser dans le cas de gestion 
+  des strings qui sont essentiellements gérés dans cette classe.
+  \textcolor{TealBlue}{\subsubsection*{Code de la méthode CopyStringFromMachine}}
+  \begin{lstlisting}
+void SynchConsole::CopyStringFromMachine( int from, char *to, unsigned size)
+{
+	unsigned i = 0;
+	int res;
+
+	while((i<size)&&(machine->ReadMem(from+i,1,&res))){
+		*(to+i)= (char)res;
+		i++;
+	}
+	*(to+i)='\0';
+
+}   
+  \end{lstlisting}
+  Afin d'expliquer au mieux cette procédure, on va d'abord donner le détail des paramètres:
+ \begin{description}
+  \item[from:] adresse virtuelle de la chaîne mips
+  \item[to:] pointeur Linux
+  \item[size:] taille max du nombre d'octet que l'on peut écrire
+ \end{description}
+ Il suffit maintenant de lire tous les caractères de la chaîne mips ce qui est fait avec \emph{machine->ReadMem(from+i,1,\&res))} qui lit un caractère à l'adresse
+ \emph{from+i} et met le résultat à l'adresse \emph{\&res}
+ 
+ le résultat est ensuite casté en \emph{char} que l'on place à l'adresse \emph{to+i}. Bien entendu on met le caractère de fin de chaîne à la fin.
+ \textcolor{NavyBlue}{\subsection{La méthode SynchPutString}}
+ Cette partie est simple, il suffit de faire un appel à la méthode \emph{SynchPutChar} pour chaque caractère contenu dans la chaîne passé en paramètre de la
+ méthode.
+ \textcolor{TealBlue}{\subsubsection*{Code de la méthode SynchPutString}}
+  \begin{lstlisting}
+void SynchConsole::SynchPutString(const char s[])
+{
+	int i = 0;
+
+	while(*(s+i)!='\0'){
+		SynchPutChar(*(s+i));
+		i++;
+	}
+}   
+  \end{lstlisting}
+
+   \textcolor{NavyBlue}{\subsection{Fin de la mise en place de l'appel système}}
+   Maintenant que les briques sont en places pour que l'appel système se fasse bien, il n'y a plus qu'à les assembler. 
+   \\~~
+   Classiquement, on complète les fichiers \emph{syscall.h} et \emph{start.s} de la manière habituelle.
+   On finit ensuite par complèter par le fichier \emph{exception.cc}
+   \textcolor{TealBlue}{\subsubsection*{Completion de exception.cc}}
+   \begin{lstlisting}
+          case SC_SynchPutString:{
+            int c = machine->ReadRegister (4); // recupération de la chaine de caractère
+            char* to = new char[MAX_STRING_SIZE+1]; // buffer le +1 permet d'ajouter le caractere de fin de chaine
+            synchconsole->CopyStringFromMachine(c, to, MAX_STRING_SIZE); // copie chaine mips vers chaine Linux
+            DEBUG('a',"appel système de la fonction SynchPutString\n");
+            synchconsole->SynchPutString(to);
+            delete [] to; //desallocation du buffer
+            break;
+          }    
+   \end{lstlisting}
+  On récupère la chaine mips dans le registre 4. On créé une chaîne Linux. On appel notre méthode qui copie une chaîne mips dans une chaîne linux et enfin,
+  on appel notre méthode \emph{SynchPutString}. On finit par supprimer notre chaîne Linux.
+  
+  \textcolor{Violet}{\section{Fonctions de lecture}}
+  L'implémentation des fonctions de lecture est symétrique à l'implémentation des fonctions d'écriture. Pour chaque sous section qui suivra, on mettra en place
+  un appel système correspondant de manière classique.
+  
+   \textcolor{NavyBlue}{\subsection{SynchGetChar}}
+   Vu que la méthode \emph{SynchGetChar} est déjà implémentée dans la classe \emph{SynchConsole}, il suffit de complèter le fichier \emph{exception.cc}.
+   
+   \textcolor{TealBlue}{\subsubsection*{Completion de exception.cc}}
+   \begin{lstlisting}
+          case SC_SynchGetChar:{
+            char c = synchconsole->SynchGetChar();
+            //printf("%c",c);
+            machine->WriteRegister(2,(int)c); // ecriture dans le registre 2 du résultat de la fonction
+            break;
+          }    
+   \end{lstlisting}
+    Afin de permettre à l'utilisateur de trouver le résultat renvoyé par \emph{SynchGetChar} on l'écrit dans le registre 2.
+    
+     \textcolor{NavyBlue}{\subsection{SynchGetString}}
+     Afin de rendre symétrique l'utilisation de \emph{SynchGetString} par rapport à \emph{SynchPutString}, il est donc nécessaire de mettre en place une 
+     méthode qui permettra de transformer une chaîne Linux en une chaîne Mips. Ce qui se fera à l'aide la méthode \emph{CopyMachineFromString}
+     
+     \textcolor{TealBlue}{\subsubsection*{CopyMachineFromString}}
+     \begin{lstlisting}
+void SynchConsole::CopyMachineFromString(char* from, int to, unsigned size){
+	unsigned i = 0;
+	int res;
+
+	while((i<size)&&(*(from+i)!='\0')){
+		res = *(from+i);
+		machine->WriteMem(to+i,1,res);
+		i++;
+	}
+	machine->WriteMem(to+i,1,'\0');
+
+}      
+     \end{lstlisting}
+     On commence par donner une rapide description des paramètres de la méthode:
+      \begin{description}
+       \item[from:] pointeur de chaîne Linux
+       \item[to:] adresse virtuelle de chaîne mips
+       \item[size:] nombre max de caractère lu
+      \end{description}
+    À partir de là , l'implémentation est relativement simple. Il suffit de lire caractère par caractère la chaîne Linux et de les écrire à l'adresse mips.
+    On veillera à mettre un marqueur de fin de chaîne. \\
+    ~~\\   
+    Il est maintenant temps d'implémenter la méthode \emph{SynchGetString} dans la classe \emph{SynchConsole}
+    
+     \textcolor{TealBlue}{\subsubsection*{Implémentation de SynchGetString}}
+     \begin{lstlisting}
+void SynchConsole::SynchGetString(char *s, int n)
+{
+	int i = 0;
+	char c;
+	while((i<n)&&((c=SynchGetChar())!=EOF)&&(c!='\n')){
+		*(s+i)=c;
+		i++;
+	}
+	*(s+i) = '\0';
+}      
+     \end{lstlisting}
+     Cette méthode prend en paramètre un pointeur de chaîne Linux et la taille max du nombre de caractère pouvant être lu. Ensuite afin de respecter le 
+     cahier des charges, il faut que le programme s'arrête quand on lit le caractère de fin de chaîne ou un retour chariot.
+     
+     Comme d'habitude on veillera qu'à la fin de la lecture, on place un marqueur de fin de chaîne.\\
+     
+     ~~\\
+     Il faut maintenant complèter le fichier exception.cc afin de rassembler les briques précédement décrites.\\
+    \textcolor{TealBlue}{\subsubsection*{Completion de exception.cc}}
+    \begin{lstlisting}
+          case SC_SynchGetString:{
+            int to = machine->ReadRegister(4);
+            int taille = machine->ReadRegister(5); //recuperation du 2eme param de la fonction SynchGetString
+            char* from = new char[taille];
+            synchconsole->SynchGetString(from,taille-1);
+            synchconsole->CopyMachineFromString(from,to,taille); //copie de chaine linux vers chaine mips 
+            delete [] from;
+            break;
+          }     
+    \end{lstlisting}
+    La fonction utilisateur SynchGetString possède comme son homologue noyau deux paramètres. Ceux-ci sont récupérés dans les registres 4 et 5. On lit les
+    caractères tapés par l'utilisateur dans la console. Ces caractères sont placés dans une chaîne Linux. On copie ensuite la chaîne Linux en chaîne Mips.\\
+    ~~\\
+    NB : dans le cas où plusieurs thread accedent en même temps à la console, il y aura une erreur. Il faudra donc mettre en place un système de sémaphore plus
+    poussé que celui actuel.
+    \newpage
+    \textcolor{NavyBlue}{\subsection{SynchPutInt}}
+    On va maintenant écrire des entiers signés. Pour cela on va utiliser la fonction \emph{snprintf} de Linux qui consiste à écrire un entier dans une 
+    chaîne de caractère. Cette chaîne de caractère est ensuite écrite via la méthode \emph{SynchPutString}.
+
+    \textcolor{TealBlue}{\subsubsection*{Code de la methode SynchPutInt}}
+    \begin{lstlisting}
+void SynchConsole::SynchPutInt(int n){
+
+	char* string = new char[NBREMAXCARACTENTIER];
+	snprintf(string,NBREMAXCARACTENTIER,"%d",n); //ecrit n dans string 
+	SynchPutString(string);
+
+	delete [] string;
+}     
+    \end{lstlisting}
+    
+    Et on complète le fichier exception.cc :
+    \textcolor{TealBlue}{\subsubsection*{Completion de exception.cc}}
+    \begin{lstlisting}
+          case SC_SynchPutInt:{
+            int entier = machine->ReadRegister(4);
+            synchconsole->SynchPutInt(entier);
+            break;
+          }     
+    \end{lstlisting}
+
+    \textcolor{NavyBlue}{\subsection{SynchGetInt}}
+    On va maintenant lire des entiers signés. Pour cela on va utiliser la fonction \emph{sscanf}. 
+    \begin{lstlisting}
+void SynchConsole::SynchGetInt( int *n){
+	int* i = new int;
+	char* string = new char[NBREMAXCARACTENTIER];
+	SynchGetString(string,NBREMAXCARACTENTIER);
+	sscanf(string,"%d",i);
+
+	machine->WriteMem(*n,4,*i);
+	delete [] string;
+	delete i;
+}      
+    \end{lstlisting}
+    la fonction \emph{sscanf} prend en paramètre un pointeur de chaîne Linux ``string'' et il va écrire l'entier contenu dans \emph{string} dans le pointeur 
+    d'entier \emph{i} également passer en paramètre.
+    
+    La chaîne \emph{string} est préalablement initialisée par la méthode \emph{SynchGetString}.
+    
+    \textcolor{TealBlue}{\subsubsection*{Completion de exception.cc}}
+    Il ne reste plus qu'à complèter le code d'exception.cc qui se fait sans surprise.
+    \begin{lstlisting}
+          case SC_SynchGetInt:{
+            int* n = new int;
+            *n = machine->ReadRegister(4);
+            synchconsole->SynchGetInt(n);
+            delete n;
+            break;
+          }     
+    \end{lstlisting}
+
+\end{document}
