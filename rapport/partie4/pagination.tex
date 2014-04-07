@@ -53,6 +53,76 @@ stringstyle=\color[rgb]{0.627,0.126,0.941},
   \newpage
   
   \textcolor{Violet}{\section{Adressage virtuelle par une table des pages}}
+
+  En regardant le fichier addrspace.cc, on remarque un appel à readAt. La fonction readAt, présente dans openfile.cc, contient notamment le code suivant :
+
+  \begin{lstlisting}
+  // read in all the full and partial sectors that we need
+  buf = new char[numSectors * SectorSize];
+  for (i = firstSector; i <= lastSector; i++) 
+    synchDisk->ReadSector(hdr->ByteToSector(i * SectorSize), 
+  &buf[(i - firstSector) * SectorSize]);
+
+  // copy the part we want
+  bcopy(&buf[position - (firstSector * SectorSize)], into, numBytes);
+  \end{lstlisting}
+
+  ReadAt utilise directement la mémoire (et les secteurs) physique. Pour gérer plusieurs processus en même temps, il va falloir changer ça. D'où l'intérêt de passer par des adresses virtuelles, notamment pour \"compartimenter \" chaque processus (et garantir un accès exclusif à cette portion de mémoire).
+
+  L'écriture de ReadAtVirtual passe par plusieurs étapes clés. On commence par faire un appel à readAt (cet appel est désormais masqué du point de vue de addrspace). Le résultat est stocké dans un buffer créé pour l'occasion.
+
+  \begin{lstlisting}
+  // On appelle ReadAt et on stocke le résultat (données lues) dans un buffer local
+  char buffer[numBytes];
+  int size = executable->ReadAt(buffer, numBytes, position);
+  \end{lstlisting}
+
+  On sauvegarde ensuite la table des pages courante (pour pouvoir la restaurer) avant de charger la table des pages passée en paramètre. On peut désormais recopier le buffer sur les pages virtuelles (avec la fonction writeMem). Le processus pourra manipuler ces pages virtuelles, sans avoir conscience de ne pas manipuler directement les frames physiques.
+
+  \begin{lstlisting}
+  // Au préalable, on sauvegarde la page des tables et on charge celle fournie lors de l'appel
+  int i;
+  for(i=0;i<size;i++) {
+    machine->WriteMem(virtualaddr+i, 1, *(buffer+i));
+  }
+  // Ici, on restaure la table sauvegardée
+  \end{lstlisting}
+
+  Reste maintenant à définir la méthode de translation pages virtuelles -> pages physiques. Dans un premier temps, on se contente d'une simple incrémentation (dans addrspace.cc) :
+
+  \begin{lstlisting}
+  pageTable[i].virtualPage = i;
+  pageTable[i].physicalPage = i + 1;
+  \end{lstlisting}
+
+  Après ces modifications, nos programmes fonctionnent toujours. C'est plutôt bon signe !
+
+  Pour encapsuler les pages physiques dans des pages virtuelles, on va maintenant utiliser un frameProvider. Ce dernier aura pour rôle de recenser les pages physiques disponibles (via une bitmap) et de fournir (sur demande)des pages physiques libres et vierges (fonction bzero).
+
+  \begin{lstlisting}
+  /*récupérer un cadre libre et initialisé à 0 par la fonction bzero*/
+  int FrameProvider::GetEmptyFrame(){
+    int frame = myFrame->Find();
+    ASSERT(frame!=-1)
+    //on doit utiliser le symbole '&' car bzero à besoin d'une adresse
+    bzero(&machine->mainMemory[frame*PageSize], PageSize);
+    return frame;
+  }
+  \end{lstlisting}
+
+  Déclaration du frame dans machine.h et machine.cc :
+
+  \begin{lstlisting}
+  FrameProvider* myFrameProvider;
+  myFrameProvider = new FrameProvider((int)(MemorySize/PageSize));
+  \end{lstlisting}
+
+  Puis on adapte addrspace.cc :
+
+  \begin{lstlisting}
+  pageTable[i].physicalPage = machine->myFrameProvider->GetEmptyFrame();
+  \end{lstlisting}
+
   \textcolor{Violet}{\section{Exécuter plusieurs programmes en même temps}}
   On met en place de manière classique l'appel système: 
   \begin{lstlisting}
