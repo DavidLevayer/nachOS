@@ -46,6 +46,12 @@ stringstyle=\color[rgb]{0.627,0.126,0.941},
    \maketitle
   \tableofcontents
   \newpage
+  \part{Introduction}
+  Nachos est un mini-système simulé assez basique dans lequel il sera possible de simuler plusieurs fonctionnalité d'un vrai système d'exploitation. 
+  
+      \begin{center}
+    \includegraphics[width=10cm,height=10cm]{nachos.png}\\
+    \end{center}
   \part{Gestion des entrées/sorties}
   \textcolor{Violet}{\section{But}}
   Dans cette partie, le sujet ne demande que l'ajout d'un fichier putchar.c dans le dossier Test. 
@@ -814,7 +820,7 @@ void SynchConsole::SynchGetInt( int *n){
   Pour encapsuler les pages physiques dans des pages virtuelles, on va maintenant utiliser un frameProvider. Ce dernier aura pour rôle de recenser les pages physiques disponibles (via une bitmap) et de fournir (sur demande)des pages physiques libres et vierges (fonction bzero).
 
   \begin{lstlisting}
-  /*récupérer un cadre libre et initialisé à 0 par la fonction bzero*/
+  /*recupérer un cadre libre et initialise à 0 par la fonction bzero*/
   int FrameProvider::GetEmptyFrame(){
     int frame = myFrame->Find();
     ASSERT(frame!=-1)
@@ -860,7 +866,7 @@ void SynchConsole::SynchGetInt( int *n){
 	.ent ForkExec
 
 ForkExec: // nom de l'appel système
-	addiu $2,$0,SC_ForkExec // ajout dans le registre 2 la valeur correspondant à l'appel sytème
+	addiu $2,$0,SC_ForkExec // ajout dans le registre 2 la valeur correspondant à l'appel syteme
 	syscall // appel système
 	j     $31
 	.end ForkExec
@@ -902,9 +908,9 @@ struct Serialisation{
 };
 
 void StartProcess(int arg){
-	Serialisation* restor = (Serialisation*) arg; // on restaure notre sérialisation 
+	Serialisation* restor = (Serialisation*) arg; // on restaure notre serialisation 
 	currentThread->space = restor->space; // on affecte le nouvel espace mémoir à notre nouveau processus
-	currentThread->space->InitRegisters ();	// on réinitialise les registres
+	currentThread->space->InitRegisters ();	// on reinitialise les registres
 	currentThread->space->RestoreState ();	// on charge la table des pages des registres
 
 	machine->Run ();		// on lance le processus
@@ -913,17 +919,17 @@ void StartProcess(int arg){
 int do_UserFork(char *s){
 
 	OpenFile *executable = fileSystem->Open (s);
-	AddrSpace *space = new AddrSpace(executable); // création du nouvel espace mémoir du processus que l'on va mettre en place
+	AddrSpace *space = new AddrSpace(executable); // creation du nouvel espace mémoir du processus que l'on va mettre en place
 
-	Thread* newThread = new Thread("newProcess"); // un processus est juste un thread avec un nouvel espace mémoir
+	Thread* newThread = new Thread("newProcess"); // un processus est juste un thread avec un nouvel espace memoir
   
-	Serialisation* save = new Serialisation; // comme pour les threads, on sérialise l'espace mémoir qu'on souhaite affecter à notre processus
+	Serialisation* save = new Serialisation; // comme pour les threads, on serialise l'espace memoir qu'on souhaite affecter à notre processus
 	save->space = space;
 
-	newThread->Fork(StartProcess,(int)save); // on fork le processus père
-	machine->SetNbProcess(machine->GetNbProcess()+1); // on incrémente de 1 le nbre de processus créé
+	newThread->Fork(StartProcess,(int)save); // on fork le processus pere
+	machine->SetNbProcess(machine->GetNbProcess()+1); // on incremente de 1 le nbre de processus cree
 	delete executable;
-	currentThread->Yield(); // le processus père est mis en attente
+	currentThread->Yield(); // le processus pere est mis en attente
 	return 0;
 }
 
@@ -1003,7 +1009,7 @@ int do_UserFork(char *s){
   \begin{lstlisting}
           case SC_Halt:{
             DEBUG('a', "Shutdown, initiated by user program.\n");
-            while(currentThread->space->NbreThread()>1) // tant qu'il y a plus que un thread on reste bloquer
+            while(currentThread->space->NbreThread()>1) // tant qu'il y a plus que un thread on reste bloque
               currentThread->space->LockEndMain();
             
             if(machine->GetNbProcess() > 0){
@@ -1014,5 +1020,12 @@ int do_UserFork(char *s){
             break;
           }   
   \end{lstlisting}
-
+  \part{Conclusion}
+    Pour conclure, ce projet entre en adéquation avec les compétences acquises lors de notre parcour et plus particulièrement en rapport avec notre option :
+  Architectures des Réseaux. Suite à nos cours d'architectures et de système d'exploitation, le principe de plusieurs implémentationd ne nous été pas inconnu (tel
+  que les semaphores ou encore les threads). Cependant, la mise en place des différents objectifs nous on demandé beaucoup de réflexion pour quelque ligne de code.
+  C'est pourquoi ici la quantité ne reflète pas la qualité de la réflexion.
+  
+    Le projet fut, dans sa globalité, très interressant et nous as permis de comprendre comment fonctionné les outils que nous utilisions déjà. 
+    Il est tout de même dommage de ne pas avoir eut le temps de finir tout les objectifs.
 \end{document}
