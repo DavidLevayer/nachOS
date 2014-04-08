@@ -46,13 +46,20 @@ stringstyle=\color[rgb]{0.627,0.126,0.941},
    \maketitle
   \tableofcontents
   \newpage
-  \part{Introduction}
-  Nachos est un mini-système simulé assez basique dans lequel il sera possible de simuler plusieurs fonctionnalité d'un vrai système d'exploitation. 
-  
+
+  \part{Gestion des entrées/sorties}
+     \textcolor{Violet}{\section{Introduction}}
+  NachOS est un mini-système d'exploitation à but éducatif. Simulé par un processeur MIPS, 
+  il permet d'appréhender les problématiques rencontrées dans tout système d'exploitation. 
+  Au cours de ce projet, nous allons faire évoluer une version basique de NachOS, en ajoutant des 
+  fonctionnalités clés telles que les entrée-sorties ou les threads. Cette approche permet d'expérimenter concretement
+  les notions de système acquises au cours des deux dernières années. Chaque étape représente un concept précis. Dans un premier
+  temps, nous verrons notre implémentation d'une console et du concept d'entrée-sortie. L'étape suivante nous menera à
+  l'implémentation de threads utilisateurs, avec les différentes contraintes qui en découlent. Enfin, nous verrons dans une dernière
+  partie comment généraliser le concept de thread pour l'étendre et permettre une exécution multi-processus
       \begin{center}
     \includegraphics[width=10cm,height=10cm]{nachos.png}\\
     \end{center}
-  \part{Gestion des entrées/sorties}
   \textcolor{Violet}{\section{But}}
   Dans cette partie, le sujet ne demande que l'ajout d'un fichier putchar.c dans le dossier Test. 
   Le contenu de ce fichier est le suivant (il servira par la suite pour tester les entrées/sorties) :
@@ -68,6 +75,7 @@ main ()
     return 0;
 }   
   \end{lstlisting}
+  \newpage
  \textcolor{Violet}{\section{consoles asynchrones}}
  On exécute le programme ConsoleTest via la commande \emph{./nachos-userprog -c} (dans le répertoire build). 
  La console se lance et se contente d'imprimer sur l'écran le caractère que l'on a saisi. L'appui sur le caractère \emph{'q'} ferme la console.
@@ -1020,12 +1028,13 @@ int do_UserFork(char *s){
             break;
           }   
   \end{lstlisting}
-  \part{Conclusion}
+   \textcolor{Violet}{\section{Conclusion}}
     Pour conclure, ce projet entre en adéquation avec les compétences acquises lors de notre parcour et plus particulièrement en rapport avec notre option :
-  Architectures des Réseaux. Suite à nos cours d'architectures et de système d'exploitation, le principe de plusieurs implémentationd ne nous été pas inconnu (tel
-  que les semaphores ou encore les threads). Cependant, la mise en place des différents objectifs nous on demandé beaucoup de réflexion pour quelque ligne de code.
+  Architectures des Réseaux. Suite à nos cours d'architectures et de système d'exploitation, le principe de plusieurs concepts abordés dans ce projet
+  ne nous était pas inconnu (tel que les semaphores ou encore les threads). 
+  Cependant, la mise en place des différents objectifs nous on demandé beaucoup de réflexion pour quelques lignes de code.
   C'est pourquoi ici la quantité ne reflète pas la qualité de la réflexion.
   
     Le projet fut, dans sa globalité, très interressant et nous as permis de comprendre comment fonctionné les outils que nous utilisions déjà. 
-    Il est tout de même dommage de ne pas avoir eut le temps de finir tout les objectifs.
+    Il est tout de même dommage de ne pas avoir eut le temps de finir tous les objectifs.
 \end{document}
